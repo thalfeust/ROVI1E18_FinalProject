@@ -40,6 +40,5 @@ int main(int argc, char* argv[])
     detection.extract( src, keyPoints, FeaturesDetection::SIFT, true);
 
     while (cv::waitKey() != 27)
-    ;
-    return 0;
+    ; 
 }
