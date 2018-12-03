@@ -111,6 +111,19 @@ depend:
 .PHONY : depend
 
 #=============================================================================
+# Target rules for targets named my_library
+
+# Build rule for target.
+my_library: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 my_library
+.PHONY : my_library
+
+# fast build rule for target.
+my_library/fast:
+	$(MAKE) -f CMakeFiles/my_library.dir/build.make CMakeFiles/my_library.dir/build
+.PHONY : my_library/fast
+
+#=============================================================================
 # Target rules for targets named mainT_seq3
 
 # Build rule for target.
@@ -122,6 +135,33 @@ mainT_seq3: cmake_check_build_system
 mainT_seq3/fast:
 	$(MAKE) -f CMakeFiles/mainT_seq3.dir/build.make CMakeFiles/mainT_seq3.dir/build
 .PHONY : mainT_seq3/fast
+
+src/FeaturesDetection.o: src/FeaturesDetection.cpp.o
+
+.PHONY : src/FeaturesDetection.o
+
+# target to build an object file
+src/FeaturesDetection.cpp.o:
+	$(MAKE) -f CMakeFiles/my_library.dir/build.make CMakeFiles/my_library.dir/src/FeaturesDetection.cpp.o
+.PHONY : src/FeaturesDetection.cpp.o
+
+src/FeaturesDetection.i: src/FeaturesDetection.cpp.i
+
+.PHONY : src/FeaturesDetection.i
+
+# target to preprocess a source file
+src/FeaturesDetection.cpp.i:
+	$(MAKE) -f CMakeFiles/my_library.dir/build.make CMakeFiles/my_library.dir/src/FeaturesDetection.cpp.i
+.PHONY : src/FeaturesDetection.cpp.i
+
+src/FeaturesDetection.s: src/FeaturesDetection.cpp.s
+
+.PHONY : src/FeaturesDetection.s
+
+# target to generate assembly for a file
+src/FeaturesDetection.cpp.s:
+	$(MAKE) -f CMakeFiles/my_library.dir/build.make CMakeFiles/my_library.dir/src/FeaturesDetection.cpp.s
+.PHONY : src/FeaturesDetection.cpp.s
 
 src/test_marker3.o: src/test_marker3.cpp.o
 
@@ -157,8 +197,12 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... rebuild_cache"
-	@echo "... mainT_seq3"
 	@echo "... edit_cache"
+	@echo "... my_library"
+	@echo "... mainT_seq3"
+	@echo "... src/FeaturesDetection.o"
+	@echo "... src/FeaturesDetection.i"
+	@echo "... src/FeaturesDetection.s"
 	@echo "... src/test_marker3.o"
 	@echo "... src/test_marker3.i"
 	@echo "... src/test_marker3.s"
