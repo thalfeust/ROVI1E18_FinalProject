@@ -1,5 +1,10 @@
 Vision/build
 !Workcells
 Workcells/*
+Plugin/SamplePlugunPA10/backgrounds
+Plugin/SamplePluginPA10/build
+Plugin/SamplePluginPA10/libs
+Plugin/SamplePluginPA10/markers
+Plugin/SamplePluginPA10/motions
 !Plugin/SamplePluginPA10/src/*
 Robotic/build/*
