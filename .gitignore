@@ -3,4 +3,5 @@ Vision/build
 Workcells/*
 !Plugin
 Plugin/*
+!Plugin/SamplePluginPA10/src/*
 Robotic/build/*
