@@ -54,6 +54,8 @@ rw::math::Vector2D<double> get_du_dv( rw::math::Vector2D<double> UVref, std::vec
 
   rw::math::Transform3D<double> wTmarker = TransformMotions[index];
 
+  std::cout << "Motions \n" << wTmarker << std::endl;
+
   marker_frame->setTransform( wTmarker, state);
 
   // Get new Pos of the marker inside Fcam
@@ -66,8 +68,109 @@ rw::math::Vector2D<double> get_du_dv( rw::math::Vector2D<double> UVref, std::vec
   std::cout << "UV" << UV << std::endl;
 
   return dUV;
-  //rw::math::Transform3D<double> wTb = device.worldTbase();
-  //rw::math::Transform3D<double> wTb = device.baseTMarker();
+}
+
+rw::math::Jacobian get_Jimage( float f, rw::math::Vector2D<double> UV, float z) {
+  rw::math::Jacobian Jimage(2);
+  Jimage(0,0) = -f/z;
+  Jimage(1,0) = 0;
+  Jimage(2,0) = UV[0]/z;
+  Jimage(3,0) = UV[0]*UV[1]/f;
+  Jimage(4,0) = -1 * ((f*f+UV[0]*UV[0])/f);
+  Jimage(5,0) = UV[1];
+  Jimage(0,1) = 0;
+  Jimage(1,1) = -f/z;
+  Jimage(2,1) = UV[1]/z;
+  Jimage(3,1) = ((f*f+UV[1]*UV[1])/f);
+  Jimage(4,1) = -(UV[0]*UV[1])/f;
+  Jimage(5,1) = -UV[0];
+
+  return Jimage;
+}
+
+rw::math::Jacobian get_Sq( rw::models::Device::Ptr device, rw::kinematics::State state, rw::kinematics::Frame* cam_frame) {
+
+  rw::math::Jacobian Sq(6);
+  rw::math::Rotation3D<> R = device->baseTframe(cam_frame, state).R();
+
+  Sq(0,0) = R(0,0);
+  Sq(1,0) = R(0,1);
+  Sq(2,0) = R(0,2);
+  Sq(0,1) = R(1,0);
+  Sq(1,1) = R(1,1);
+  Sq(2,1) = R(1,2);
+  Sq(0,2) = R(2,0);
+  Sq(1,2) = R(2,1);
+  Sq(2,2) = R(2,2);
+
+  Sq(3,0) = 0;
+  Sq(4,0) = 0;
+  Sq(5,0) = 0;
+  Sq(3,1) = 0;
+  Sq(4,1) = 0;
+  Sq(5,1) = 0;
+  Sq(3,2) = 0;
+  Sq(4,2) = 0;
+  Sq(5,2) = 0;
+
+  Sq(0,3) = 0;
+  Sq(1,3) = 0;
+  Sq(2,3) = 0;
+  Sq(0,4) = 0;
+  Sq(1,4) = 0;
+  Sq(2,4) = 0;
+  Sq(0,5) = 0;
+  Sq(1,5) = 0;
+  Sq(2,5) = 0;
+
+  Sq(3,3) = R(0,0);
+  Sq(4,3) = R(0,1);
+  Sq(5,3) = R(0,2);
+  Sq(3,4) = R(1,0);
+  Sq(4,4) = R(1,1);
+  Sq(5,4) = R(1,2);
+  Sq(3,5) = R(2,0);
+  Sq(4,5) = R(2,1);
+  Sq(5,5) = R(2,2);
+
+  return Sq;
+}
+
+rw::math::Jacobian get_Zimage( rw::models::Device::Ptr device, rw::kinematics::State state, rw::kinematics::Frame* cam_frame, float f, rw::math::Vector2D<double> UV, float z) {
+
+  // get the Jacobian
+  rw::math::Jacobian J = device->baseJframe(cam_frame, state);
+
+  // get the matrix Sq from baseRcam
+  rw::math::Jacobian Sq = get_Sq( device, state, cam_frame);
+
+  // get Jimage from UV before displacement
+  rw::math::Jacobian Jimage = get_Jimage( f, UV, z);
+  rw::math::Jacobian Jimage_transpose(Jimage.e().transpose());
+
+  // return Zimage
+  return Jimage_transpose * Sq * J;
+}
+
+// based on the ex4_2 correction
+rw::math::Q algorithm1(const rw::models::Device::Ptr device, rw::kinematics::State state, const rw::kinematics::Frame* cam_frame, rw::math::Jacobian Zimage, rw::math::Q q, rw::math::Vector2D<double> dUV) {
+
+	  rw::math::Jacobian Zimage_tranpose(Zimage.e().transpose());
+	  rw::math::Jacobian Zimage_inv((Zimage*Zimage_tranpose).e().inverse());
+
+    rw::math::Jacobian duv(2,1);
+    duv(0,0) = dUV(0);
+    duv(1,0) = dUV(1);
+
+    std::cout << "Zimage_inv from Algo1 :\n" << Zimage_inv << std::endl;
+
+    // based on the equation (4.33)
+    rw::math::Jacobian y = Zimage_inv*duv;
+  	rw::math::Jacobian deltaQ = Zimage_tranpose*y;
+    std::cout << "dQ from Algo1 : \n" << deltaQ << std::endl;
+
+    rw::math::Q dq(7, deltaQ(0,0), deltaQ(0,1), deltaQ(0,2), deltaQ(0,3), deltaQ(0,4), deltaQ(0,5), deltaQ(0,6));
+    return dq;
 }
 
 int main() {
@@ -117,9 +220,23 @@ int main() {
   rw::math::Vector3D<double> P = markerTcam.P();
   rw::math::Vector2D<double> UVref( f*P(0)/P(2), f*P(1)/P(2));
 
-  std::cout << "UVref" << UVref << std::endl;
+  std::cout << "UVref : " << UVref << std::endl;
 
-  rw::math::Vector2D<double> dUV = get_du_dv( UVref, TransformMotions, 0, cam_frame, marker_frame, state, f);
+  rw::math::Vector2D<double> dUV = get_du_dv( UVref, TransformMotions, 460, cam_frame, marker_frame, state, f);
 
-  std::cout << "dUV" << dUV << std::endl;
+  std::cout << "dUV : " << dUV << std::endl;
+
+  rw::math::Jacobian Zimage = get_Zimage( device, state, cam_frame, f, UVref, z);
+
+  std::cout << "Zimage :\n" << Zimage << std::endl;
+
+  rw::math::Q dq = algorithm1( device, state, cam_frame, Zimage, q, dUV);
+
+  q += dq;
+
+  std::cout << "New q :\n" << q << std::endl;
+
+  std::cout << "END" << std::endl;
+  return 0;
+
 }
