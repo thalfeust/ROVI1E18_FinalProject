@@ -224,7 +224,68 @@ dq_from_dUV_computation algorithm1(
   return results;
 }
 
+void superLoop(
+  rw::models::Device::Ptr device,
+  rw::kinematics::State state,
+  rw::kinematics::Frame* cam_frame,
+  rw::kinematics::MovableFrame* marker_frame,
+  rw::math::Q q,
+  rw::math::Vector2D<double> UVref,
+  std::vector<rw::math::Transform3D<double>> TransformMotions,
+  float f,
+  float z,
+  float deltaT,
+  bool optionStoreTest) {
 
+    // Get the velocity limit
+    rw::math::Q qVelocityLimit = device->getVelocityLimits();
+
+    // For each steps the new q is store
+    rw::math::Q qStorage[TransformMotions.size()];
+    int accessible[TransformMotions.size()]; // 0 : impossible, 1 : not reachable, 2 : yes
+
+    for (unsigned int i=0; i<TransformMotions.size(); i++) {
+
+      dq_from_dUV_computation result = algorithm1( device, state, cam_frame, marker_frame, q, UVref, i, TransformMotions, f, z);
+
+      if(result.dq.size()>0) {
+        for (unsigned j=result.dq.size()-1; j>=0; j--) {
+          bool reachable = true;
+          for (unsigned w=0; w<q.size(); w++) {
+            if( result.dq[j][w] / deltaT > qVelocityLimit[w]) {
+              reachable = false;
+              break;
+            }
+          }
+          if( reachable) {
+            q += result.dq[j];
+            if( j!=result.dq.size()-1) {
+              accessible[i] = 1;
+            }else {
+              accessible[i] = 2;
+            }
+            break;
+          }else {
+            accessible[i] = 0;
+          }
+        }
+      }else {
+        accessible[i] = 2;
+      }
+
+      // Update the storages;
+      qStorage[i] = q;
+
+      // Update the workcell
+      device->setQ( q, state);
+    }
+
+    // Print the results
+    std::cout << "\n\n\nQ results : " << std::endl;
+    for (unsigned int i=0; i<TransformMotions.size(); i++) {
+      std::cout << accessible[i] << "\t" << qStorage[i] << std::endl;
+    }
+}
 
 int main() {
 
@@ -232,6 +293,7 @@ int main() {
   const std::string workcell_path = "../../Workcells/PA10WorkCell/ScenePA10RoVi1.wc.xml";
   const std::string device_name = "PA10";
   //const std::string motions_path = "../../Plugin/SamplePluginPA10/motions/MarkerMotionSlow.txt";
+  //const std::string motions_path = "../../Plugin/SamplePluginPA10/motions/MarkerMotionMedium.txt";
   const std::string motions_path = "../../Plugin/SamplePluginPA10/motions/MarkerMotionFast.txt";
 
   // Load workcell
@@ -268,15 +330,14 @@ int main() {
 
   std::cout << "\n\n\n";
 
-  // Get Pos of the marker inside Fcam
+  // Get Pos of the marker inside Fcam to compute UVref
   rw::math::Transform3D<double> markerTcam = cam_frame->fTf( marker_frame, state);
-
   rw::math::Vector3D<double> P = markerTcam.P();
   rw::math::Vector2D<double> UVref( f*P(0)/P(2), f*P(1)/P(2));
 
   std::cout << "UVref : " << UVref << std::endl;
 
-  rw::math::Vector2D<double> dUV = get_du_dv( UVref, TransformMotions, 35, cam_frame, marker_frame, state, f);
+  /*rw::math::Vector2D<double> dUV = get_du_dv( UVref, TransformMotions, 35, cam_frame, marker_frame, state, f);
 
   std::cout << "dUV : " << dUV << std::endl;
 
@@ -292,7 +353,17 @@ int main() {
 
   q += dq.dq[dq.dq.size()-1];
 
-  std::cout << "\n-> New q :\n" << q << std::endl;
+  std::cout << "\n-> New q :\n" << q << std::endl;*/
+
+  superLoop(
+    device,
+    state,
+    cam_frame,
+    marker_frame,
+    q,
+    UVref,
+    TransformMotions,
+    f, z, deltaT, true);
 
   std::cout << "END" << std::endl;
   return 0;
