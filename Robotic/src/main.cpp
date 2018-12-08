@@ -50,11 +50,16 @@ std::vector<rw::math::Transform3D<double>> getTransformMotions( std::string path
   return TransformMotions;
 }
 
-rw::math::Vector2D<double> get_du_dv( rw::math::Vector2D<double> UVref, std::vector<rw::math::Transform3D<double>> TransformMotions, int index, rw::kinematics::Frame* cam_frame, rw::kinematics::MovableFrame* marker_frame, rw::kinematics::State state, float f) {
+rw::math::Vector2D<double> get_du_dv(
+  rw::math::Vector2D<double> UVref,
+  std::vector<rw::math::Transform3D<double>> TransformMotions,
+  int index,
+  rw::kinematics::Frame* cam_frame,
+  rw::kinematics::MovableFrame* marker_frame,
+  rw::kinematics::State state,
+  float f) {
 
   rw::math::Transform3D<double> wTmarker = TransformMotions[index];
-
-  std::cout << "Motions \n" << wTmarker << std::endl;
 
   marker_frame->setTransform( wTmarker, state);
 
@@ -65,12 +70,14 @@ rw::math::Vector2D<double> get_du_dv( rw::math::Vector2D<double> UVref, std::vec
   rw::math::Vector2D<double> UV( f*P(0)/P(2), f*P(1)/P(2));
   rw::math::Vector2D<double> dUV( UVref(0)-UV(0), UVref(1)-UV(1));
 
-  std::cout << "UV" << UV << std::endl;
-
   return dUV;
 }
 
-rw::math::Jacobian get_Jimage( float f, rw::math::Vector2D<double> UV, float z) {
+rw::math::Jacobian get_Jimage(
+  float f,
+  rw::math::Vector2D<double> UV,
+  float z) {
+
   rw::math::Jacobian Jimage(2);
   Jimage(0,0) = -f/z;
   Jimage(1,0) = 0;
@@ -88,7 +95,10 @@ rw::math::Jacobian get_Jimage( float f, rw::math::Vector2D<double> UV, float z) 
   return Jimage;
 }
 
-rw::math::Jacobian get_Sq( rw::models::Device::Ptr device, rw::kinematics::State state, rw::kinematics::Frame* cam_frame) {
+rw::math::Jacobian get_Sq(
+  rw::models::Device::Ptr device,
+  rw::kinematics::State state,
+  rw::kinematics::Frame* cam_frame) {
 
   rw::math::Jacobian Sq(6);
   rw::math::Rotation3D<> R = device->baseTframe(cam_frame, state).R();
@@ -136,7 +146,13 @@ rw::math::Jacobian get_Sq( rw::models::Device::Ptr device, rw::kinematics::State
   return Sq;
 }
 
-rw::math::Jacobian get_Zimage( rw::models::Device::Ptr device, rw::kinematics::State state, rw::kinematics::Frame* cam_frame, float f, rw::math::Vector2D<double> UV, float z) {
+rw::math::Jacobian get_Zimage(
+  rw::models::Device::Ptr device,
+  rw::kinematics::State state,
+  rw::kinematics::Frame* cam_frame,
+  float f,
+  rw::math::Vector2D<double> UV,
+  float z) {
 
   // get the Jacobian
   rw::math::Jacobian J = device->baseJframe(cam_frame, state);
@@ -152,33 +168,71 @@ rw::math::Jacobian get_Zimage( rw::models::Device::Ptr device, rw::kinematics::S
   return Jimage_transpose * Sq * J;
 }
 
+struct dq_from_dUV_computation {
+  std::vector<rw::math::Q> dq; // every dq used to track the marker
+  int iterations; // number of iterations
+} ;
+
 // based on the ex4_2 correction
-rw::math::Q algorithm1(const rw::models::Device::Ptr device, rw::kinematics::State state, const rw::kinematics::Frame* cam_frame, rw::math::Jacobian Zimage, rw::math::Q q, rw::math::Vector2D<double> dUV) {
+dq_from_dUV_computation algorithm1(
+  rw::models::Device::Ptr device,
+  rw::kinematics::State state,
+  rw::kinematics::Frame* cam_frame,
+  rw::kinematics::MovableFrame* marker_frame,
+  rw::math::Q q,
+  rw::math::Vector2D<double> UVref,
+  int index,
+  std::vector<rw::math::Transform3D<double>> TransformMotions,
+  float f,
+  float z) {
 
-	  rw::math::Jacobian Zimage_tranpose(Zimage.e().transpose());
-	  rw::math::Jacobian Zimage_inv((Zimage*Zimage_tranpose).e().inverse());
+  // Initialization of the return variable
+  dq_from_dUV_computation results;
+  results.iterations = 0;
 
-    rw::math::Jacobian duv(2,1);
-    duv(0,0) = dUV(0);
-    duv(1,0) = dUV(1);
+  rw::math::Q currentQ = q;
 
-    std::cout << "Zimage_inv from Algo1 :\n" << Zimage_inv << std::endl;
+  // Comute du and dv
+  rw::math::Vector2D<double> currentDUV = get_du_dv( UVref, TransformMotions, index, cam_frame, marker_frame, state, f);
 
-    // based on the equation (4.33)
-    rw::math::Jacobian y = Zimage_inv*duv;
-  	rw::math::Jacobian deltaQ = Zimage_tranpose*y;
-    std::cout << "dQ from Algo1 : \n" << deltaQ << std::endl;
+  const double epsilon = 1; // precision of 1 pixel
 
-    rw::math::Q dq(7, deltaQ(0,0), deltaQ(0,1), deltaQ(0,2), deltaQ(0,3), deltaQ(0,4), deltaQ(0,5), deltaQ(0,6));
-    return dq;
+  // Loop until the precision is lower 1 pixel
+  while( currentDUV.norm2() > epsilon) {
+
+    // Get Zimage from the equation following the (eq.4.34)
+    rw::math::Jacobian Zimage = get_Zimage( device, state, cam_frame, f, UVref, z);
+
+    // based on the way to solve the equation (eq.4.34)
+    rw::math::Q dq( rw::math::LinearAlgebra::pseudoInverse(Zimage.e())*currentDUV.e());
+
+    // Update the result of the function
+    results.dq.push_back( dq);
+    results.iterations++;
+
+    // Update the state of the joints
+    currentQ += dq;
+    device->setQ( currentQ, state);
+
+    //std::cout << "dQ from Algo1 : [" << results.iterations << "]\n" << dq << std::endl;
+
+    // Compute the new du and dv
+    currentDUV = get_du_dv( UVref, TransformMotions, index, cam_frame, marker_frame, state, f);
+
+    //std::cout << "currentDUV from Algo1 : \n" << currentDUV << std::endl;
+  }
+  return results;
 }
+
+
 
 int main() {
 
   // Paths to workcell, name of robot, path for the motion
   const std::string workcell_path = "../../Workcells/PA10WorkCell/ScenePA10RoVi1.wc.xml";
   const std::string device_name = "PA10";
-  const std::string motions_path = "../../Plugin/SamplePluginPA10/motions/MarkerMotionSlow.txt";
+  //const std::string motions_path = "../../Plugin/SamplePluginPA10/motions/MarkerMotionSlow.txt";
+  const std::string motions_path = "../../Plugin/SamplePluginPA10/motions/MarkerMotionFast.txt";
 
   // Load workcell
   rw::models::WorkCell::Ptr wc = rw::loaders::WorkCellLoader::Factory::load(workcell_path);
@@ -222,7 +276,7 @@ int main() {
 
   std::cout << "UVref : " << UVref << std::endl;
 
-  rw::math::Vector2D<double> dUV = get_du_dv( UVref, TransformMotions, 460, cam_frame, marker_frame, state, f);
+  rw::math::Vector2D<double> dUV = get_du_dv( UVref, TransformMotions, 35, cam_frame, marker_frame, state, f);
 
   std::cout << "dUV : " << dUV << std::endl;
 
@@ -230,11 +284,15 @@ int main() {
 
   std::cout << "Zimage :\n" << Zimage << std::endl;
 
-  rw::math::Q dq = algorithm1( device, state, cam_frame, Zimage, q, dUV);
+  dq_from_dUV_computation dq = algorithm1( device, state, cam_frame, marker_frame, q, UVref, 35, TransformMotions, f, z);
 
-  q += dq;
+  std::cout << "\n-> Previous q :\n" << q << std::endl;
 
-  std::cout << "New q :\n" << q << std::endl;
+  std::cout << "\n-> dq :\n" << dq.dq[dq.dq.size()-1] << std::endl;
+
+  q += dq.dq[dq.dq.size()-1];
+
+  std::cout << "\n-> New q :\n" << q << std::endl;
 
   std::cout << "END" << std::endl;
   return 0;
