@@ -33,7 +33,7 @@ int ddepth = CV_16S;
 
 int ct = 0;
 
-int erosion_size = 5;
+int erosion_size = 1;
 int dilation_size = 5;
 
 cv::Mat FindCircles( const cv::Mat& circles_hsv_image, std::vector<Point> &center)
@@ -73,7 +73,7 @@ cv::Mat FindCircles( const cv::Mat& circles_hsv_image, std::vector<Point> &cente
 		printf("perimeter: %8.3f  area: %8.3f   compactness: %8.3f\n", perimeter, area, compactness);
 
 
-		if(compactness < 0.8)
+		if(compactness < 0.78)
 		{
 			// Draw contour for things smaller than
 			Scalar color = cv::Scalar( 0, 0, 255);
@@ -228,14 +228,14 @@ int main(int argc, char* argv[])
 
 		//Threshold the HSV image, keep only the red pixels
 		cv::Mat red_hsv_range;
-		cv::inRange(hsv_image, cv::Scalar(0, 151, 0), cv::Scalar(023, 255, 255), red_hsv_range);
+		cv::inRange(hsv_image, cv::Scalar(0, 151, 0), cv::Scalar(010, 255, 255), red_hsv_range);
 
 		// output
 		matArrayOutputLine2[0] = red_hsv_range;
 
 		//Threshold the HSV image, keep only the blue pixels
 		cv::Mat blue_hsv_range;
-		cv::inRange(hsv_image, cv::Scalar(50, 100, 10), cv::Scalar(180, 200, 150), blue_hsv_range);
+		cv::inRange(hsv_image, cv::Scalar(90, 80, 10), cv::Scalar(180, 200, 150), blue_hsv_range);
 
 		// output
 		matArrayOutputLine3[0] = blue_hsv_range;
