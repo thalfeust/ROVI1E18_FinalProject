@@ -36,6 +36,193 @@ int ct = 0;
 int erosion_size = 5;
 int dilation_size = 5;
 
+bool isOnTop( Point p, Point b1, Point b2, Point b3) {
+	if( p.y <= b1.y &&
+			p.y <= b2.y &&
+			p.y <= b3.y) {
+			return true;
+	}
+	return false;
+}
+
+bool isOnTopAlone( Point p, Point b1, Point b2, Point b3) {
+	if( p.y < b1.y &&
+			p.y < b2.y &&
+			p.y < b3.y) {
+			return true;
+	}
+	return false;
+}
+
+bool isOnBottom( Point p, Point b1, Point b2, Point b3) {
+	if( p.y >= b1.y &&
+			p.y >= b2.y &&
+			p.y >= b3.y) {
+			return true;
+	}
+	return false;
+}
+
+bool isOnBottomAlone( Point p, Point b1, Point b2, Point b3) {
+	if( p.y > b1.y &&
+			p.y > b2.y &&
+			p.y > b3.y) {
+			return true;
+	}
+	return false;
+}
+
+bool isOnRight( Point p, Point b1, Point b2, Point b3) {
+	if( p.x >= b1.x &&
+			p.x >= b2.x &&
+			p.x >= b3.x) {
+			return true;
+	}
+	return false;
+}
+
+bool isOnRightAlone( Point p, Point b1, Point b2, Point b3) {
+	if( p.x > b1.x &&
+			p.x > b2.x &&
+			p.x > b3.x) {
+			return true;
+	}
+	return false;
+}
+
+bool isOnleft( Point p, Point b1, Point b2, Point b3) {
+	if( p.x < b1.x &&
+			p.x < b2.x &&
+			p.x < b3.x) {
+			return true;
+	}
+	return false;
+}
+
+Point findLeftTop( Point b1, Point b2, Point b3) {
+	if( b1.x <= b2.x && b1.x < b3.x) {
+		if( b1.x < b2.x || b1.y < b2.y) {
+			return b1;
+		}else {
+			return b2;
+		}
+	}else if( b2.x <= b3.x && b2.x < b1.x) {
+		if( b2.x < b3.x || b2.y < b3.y) {
+			return b2;
+		}else {
+			return b3;
+		}
+	}else {
+		return b3;
+	}
+}
+
+Point findLeftBottom( Point b1, Point b2, Point b3) {
+	if( b1.x <= b2.x && b1.x < b3.x) {
+		if( b1.x < b2.x || b1.y > b2.y) {
+			return b1;
+		}else {
+			return b2;
+		}
+	}else if( b2.x <= b3.x && b2.x < b1.x) {
+		if( b2.x < b3.x || b2.y > b3.y) {
+			return b2;
+		}else {
+			return b3;
+		}
+	}else {
+		return b3;
+	}
+}
+
+Point findRightTop(  Point r, std::vector<Point> b, unsigned int index) {
+
+	bool shortestPath = true;
+
+	if( index == b.size()-1) {
+		return b[index];
+	}
+
+	for (int i=index+1; i<b.size(); i++) {
+		if( r.x-b[index].x > 0 && r.y-b[index].y > 0) {
+			shortestPath = false;
+			break;
+		}
+		if( r.x-b[i].x > 0 && r.y-b[i].y > 0) {
+			continue;
+		}
+		Point p1 = b[index];
+		Point p2 = b[i];
+		if(cv::norm(r-p1) > cv::norm(r-p2)) {
+			shortestPath = false;
+			break;
+		}
+	}
+	if( !shortestPath) {
+		findRightTop( r, b, index+1);
+	}else {
+		return b[index];
+	}
+}
+
+Point findRightBottom( Point b1, Point b2, Point b3) {
+	if( b1.x >= b2.x && b1.x > b3.x) {
+		if( b1.x > b2.x || b1.y > b2.y) {
+			return b1;
+		}else {
+			return b2;
+		}
+	}else if( b2.x >= b3.x && b2.x > b1.x) {
+		if( b2.x > b3.x || b2.y > b3.y) {
+			return b2;
+		}else {
+			return b3;
+		}
+	}else {
+		return b3;
+	}
+}
+
+Point findRight( Point b1, Point b2, Point b3) {
+	if( b1.x > b2.x && b1.x > b3.x) {
+		return b1;
+	}else if( b2.x > b3.x && b2.x > b1.x) {
+		return b2;
+	}else {
+		return b3;
+	}
+}
+
+Point findLeft( Point b1, Point b2, Point b3) {
+	if( b1.x < b2.x && b1.x < b3.x) {
+		return b1;
+	}else if( b2.x < b3.x && b2.x < b1.x) {
+		return b2;
+	}else {
+		return b3;
+	}
+}
+
+Point findTop( Point b1, Point b2, Point b3) {
+	if( b1.y < b2.y && b1.y < b3.y) {
+		return b1;
+	}else if( b2.y < b3.y && b2.y < b1.y) {
+		return b2;
+	}else {
+		return b3;
+	}
+}
+
+Point findBottom( Point b1, Point b2, Point b3) {
+	if( b1.y < b2.y && b1.y < b3.y) {
+		return b1;
+	}else if( b2.y < b3.y && b2.y < b1.y) {
+		return b2;
+	}else {
+		return b3;
+	}
+}
+
 cv::Mat FindCircles( const cv::Mat& circles_hsv_image, std::vector<Point> &center)
 {
 	cv::Mat drawing = cv::Mat::zeros( circles_hsv_image.size(), CV_8UC3 );
@@ -102,6 +289,57 @@ cv::Mat FindCircles( const cv::Mat& circles_hsv_image, std::vector<Point> &cente
 		}
 	}
 	return drawing;
+}
+
+std::vector<Point> algoFind3Points( const std::vector<Point> center) {
+
+	std::vector<cv::Point> toReturn;
+
+	if (center.size() < 4) {
+		return toReturn;
+	}
+
+	// We assume the first center must be the center of the red cercle
+	cv::Point red = center[0];
+	toReturn.push_back( red);
+
+	cv::Point b1 = center[1];
+	cv::Point b2 = center[2];
+	cv::Point b3 = center[3];
+
+	std::vector<Point> b;
+	b.push_back(b1);
+	b.push_back(b2);
+	b.push_back(b3);
+
+	if( isOnTop( red, b1, b2, b3)) { // Red is on the top
+				if( isOnTopAlone( red, b1, b2, b3)) { // Red is on the top without other point
+					toReturn.push_back(findRightTop( red, b, 0));
+					std::cout << "TOP ALONE" << toReturn[1] << "\n";
+				}else {
+					if( isOnRight( red, b1, b2, b3)) {
+						toReturn.push_back( findRightBottom( b1, b2, b3));
+					}else {
+						toReturn.push_back( findRightTop( red, b, 0));
+					}
+				}
+	}else if( isOnBottom( red, b1, b2, b3)) {
+				if( isOnBottomAlone( red, b1, b2, b3)) { // Red is on the top without other point
+					toReturn.push_back(findLeft( b1, b2, b3));
+				}else {
+					if( isOnRight( red, b1, b2, b3)) {
+						toReturn.push_back( findLeftBottom( b1, b2, b3));
+					}else {
+						toReturn.push_back( findLeftTop( b1, b2, b3));
+					}
+				}
+		}else if( isOnRight( red, b1, b2, b3)) {
+				toReturn.push_back( findBottom( b1, b2, b3));
+		}else {
+				toReturn.push_back( findTop( b1, b2, b3));
+		}
+
+	return toReturn;
 }
 
 int main(int argc, char* argv[])
@@ -197,7 +435,14 @@ int main(int argc, char* argv[])
 
 		std::cout << "Number of centers : " << center.size() << std::endl;
 
+		std::vector<Point> keypoints = algoFind3Points( center);
+		std::cout  << " Key : " << keypoints[0] <<" "<< keypoints[1] << "\n";
+
 		matArrayOutputLine1[1] = img;
+		if( keypoints.size()==2) {
+			circle( matArrayOutputLine1[1], keypoints[0], 30, cv::Scalar( 255, 255, 0), -1);
+			circle( matArrayOutputLine1[1], keypoints[1], 30, cv::Scalar( 255, 255, 0), -1);
+		}
 
 		// Ouput the pictures
 		/* DOC : https://docs.opencv.org/3.4.0/d2/de8/group__core__array.html#gaf9771c991763233866bf76b5b5d1776f */
