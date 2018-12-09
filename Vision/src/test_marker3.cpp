@@ -25,23 +25,16 @@ region of inetrest in the corner
 manual fix it
 
 do an analyse, not match
-
 cause it is interesting point, few variences 
 
+detect the corners
 
 
-
-
-choose bettween sift and surf
-google
-
-
-flanbassed - goofle why it is better
-
-
-
-
-
+Done
+-Choose bettween sift and surf
+going with surf as it is more resistant
+-flanbassed - why it is better
+Same performance as bruteforce but faster
 
 
 
@@ -54,6 +47,8 @@ Version: 6e92b7d
 #include <opencv2/xfeatures2d.hpp>
 
 #include <iostream>
+
+using namespace cv;
 
 // Extract the coordinates of the keypoints
 std::vector<cv::Point2f> keypoint_coordinates(const std::vector<cv::KeyPoint>& keypoints)
@@ -88,8 +83,8 @@ int main(int argc, char* argv[])
 {
     cv::CommandLineParser parser(argc, argv,
         "{help     |                  | print this message}"
-        "{features | sift             | feature type}"
-        "{matcher  | bruteforce       | matcher type}"
+		"{@image1  | ../data/marker_4.png | image1 path}"
+        "{@image2  | ../data/marker_corny/marker_corny_01.png | image2 path}"
     );
 
     if (parser.has("help")) {
@@ -98,38 +93,33 @@ int main(int argc, char* argv[])
     }
 
     // Load images
-    //std::string filepath1 = parser.get<std::string>("@image1");
-    //std::string filepath2 = parser.get<std::string>("@image2");
-    //cv::Mat img1 = cv::imread(filepath1);
-    //cv::Mat img2 = cv::imread(filepath2);
-	cv::Mat img1 = cv::imread("../data/marker_4.png", 1);
-	cv::Mat img2 = cv::imread("../data/marker_corny/marker_corny_01.png", 1);
-
-    if (img1.empty()) {
-        //std::cout << "Input image 1 not found at '" << filepath1 << "'\n";
+    std::string filepath1 = parser.get<std::string>("@image1");
+    std::string filepath2 = parser.get<std::string>("@image2");
+    cv::Mat img1 = cv::imread(filepath1);
+    cv::Mat img2 = cv::imread(filepath2);
+	//cv::Mat img1 = cv::imread("../data/marker_4.png", 1);
+	//cv::Mat img2 = cv::imread("../data/marker_corny/marker_corny_01.png", 1);
+	//Throw error if image is empty or does not load. 
+	if (img1.empty()) {
+        std::cout << "Input image not found Image 1\n";
         return 1;
     }
-
-    if (img2.empty()) {
-        //std::cout << "Input image 2 not found at '" << filepath2 << "'\n";
+	if (img2.empty()) {
+        std::cout << "Input image not found Image 2\n";
         return 1;
     }
-
+	
     // Construct detector
     cv::Ptr<cv::Feature2D> detector;
-    std::string features_type = parser.get<std::string>("features");
-
-    if (features_type == "sift") {
-        detector = cv::xfeatures2d::SIFT::create();
-    } else if (features_type == "surf") {
-        detector = cv::xfeatures2d::SURF::create();
-    } else {
-        std::cout << "Unknown feature type '" << features_type << "'\n";
-        return 1;
-    }
-
-    std::cout << "Feature type: " << features_type << std::endl;
-
+    //std::string features_type = parser.get<std::string>("features");
+	
+	//Sift or surf
+	//https://docs.opencv.org/3.0-beta/doc/py_tutorials/py_feature2d/py_sift_intro/py_sift_intro.html
+	//https://docs.opencv.org/3.0-beta/doc/py_tutorials/py_feature2d/py_surf_intro/py_surf_intro.html
+	
+	detector = cv::xfeatures2d::SIFT::create();
+	//detector = cv::xfeatures2d::SURF::create();
+	
     // Detect keypoints and compute descriptors
     std::vector<cv::KeyPoint> keypoints1, keypoints2;
     cv::Mat descriptors1, descriptors2;
@@ -138,21 +128,10 @@ int main(int argc, char* argv[])
 
     // Construct matcher
     cv::Ptr<cv::DescriptorMatcher> matcher;
-    std::string matcher_type = parser.get<std::string>("matcher");
-	
-
-    if (matcher_type == "bruteforce") {
-        // Creating BFMatcher with the 'crossCheck' param set to true provides
-        // an alternative to Lowe's ratio criterion.
-        matcher = cv::BFMatcher::create();
-    } else if (matcher_type == "flannbased") {
-        matcher = cv::FlannBasedMatcher::create();
-    } else {
-        std::cout << "Unknown matcher type '" << matcher_type << "'\n";
-        return 1;
-    }
-
-    std::cout << "Matcher type: " << matcher_type << std::endl;
+    //std::string matcher_type = parser.get<std::string>("matcher");
+		
+	//Creating BFMatcher Flann Based
+	matcher = cv::FlannBasedMatcher::create();
 
     // Find 2 nearest correspondences for each descriptor
     std::vector<std::vector<cv::DMatch>> initial_matches;
@@ -205,7 +184,7 @@ int main(int argc, char* argv[])
     double ratio = double(num_inliers) / num_matches;
     std::cout << "Inlier ratio: " << ratio << std::endl;
 
-    // Bounding box of original object (the book takes up the whole image area)
+    // Bounding box of original object
     std::vector<cv::Point2f> bb1{
         cv::Point2f(0, 0),
         cv::Point2f(img1.cols, 0),
@@ -227,6 +206,19 @@ int main(int argc, char* argv[])
     draw_bb(img_out, bb1);
     draw_bb(img_out, bb2, cv::Point2f(img1.cols, 0)); // Offset by img1.cols in the x direction
     cv::imshow("Matches", img_out);
+	
+	
+	
+//ROI--------------------------------------------
+	//Select and cut the region of interest
+	//http://opencv-help.blogspot.com/2013/02/how-to-extract-subimage-from-image-in.html
+	cv::Mat subImage(img1, cv::Rect(0, 0, 100, 100));
+	cv::imshow("ROI", subImage);
+	
+	
+
+
+	
 
     while (cv::waitKey() != 27)
         ;
