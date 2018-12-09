@@ -14,21 +14,19 @@ For help and inspiration, see
 
 
 Todo
-manual fix it
 
-do an analyse, not match
+-Do an analyse on ROI, not match
 cause it is interesting point, few variences 
 
-detect the corners
-
+-detect the corners
 
 Done
 -Choose bettween sift and surf
-going with surf as it is more resistant
+going with sift as it is more resistant
 -flanbassed - why it is better
 Same performance as bruteforce but faster
 -Region of inetrest in the corner
-
+Manually define it
 
 
 Version: I have no idea at this point
@@ -73,15 +71,18 @@ void draw_bb(cv::Mat& img,
 
 
 
-
+/*
 void look_for_match(cv::Mat& img1, cv::Mat& img2)
 {}
-
+*/
 
 
 
 int main(int argc, char* argv[])
 {
+	//For performance eval
+	int64 t0 = cv::getTickCount();
+	
     cv::CommandLineParser parser(argc, argv,
         "{help     |                  | print this message}"
 		"{@image1  | ../data/marker_4.png | image1 path}"
@@ -169,11 +170,7 @@ int main(int argc, char* argv[])
 
     // 2. Calculate perspective transformation
     std::vector<char> inlier_mask;
-    cv::Mat H = cv::findHomography(keypoint_coordinates(matched1),
-                                   keypoint_coordinates(matched2),
-                                   cv::LMEDS,
-                                   0,
-                                   inlier_mask);
+    cv::Mat H = cv::findHomography(keypoint_coordinates(matched1), keypoint_coordinates(matched2), cv::LMEDS, 0, inlier_mask);
 
     if (H.empty()) {
         std::cout << "H matrix could not be estimated!" << std::endl;
@@ -217,32 +214,32 @@ int main(int argc, char* argv[])
 	//http://opencv-help.blogspot.com/2013/02/how-to-extract-subimage-from-image-in.html
 	cv::Mat subImage(img1, cv::Rect(0, 0, 100, 100));
 	cv::imshow("ROI", subImage);
-	// Detect keypoints and compute descriptors
-    //std::vector<cv::KeyPoint> keypoints3;
-    //cv::Mat descriptors3;
-    //detector->detectAndCompute(subImage, cv::noArray(), keypoints3, descriptors3);
-	//std::vector<cv::KeyPoint> matched3;
-	 int minHessian = 400;
-    //cv::Ptr<cv::Feature2D> detector;
-
+	
+// Detect keypoints on ROI
+	//Based on https://docs.opencv.org/3.0-beta/doc/tutorials/features2d/feature_detection/feature_detection.html
+	int minHessian = 400;
 
 	Ptr<SURF> detectors = SURF::create( minHessian );
 	std::vector<KeyPoint> keypoints_1;
 	detectors->detect( subImage, keypoints_1 );
 
-	//-- Draw keypoints
+	//Draw keypoints
 	Mat img_keypoints_1;
-
 	drawKeypoints( subImage, keypoints_1, img_keypoints_1, Scalar::all(-1), DrawMatchesFlags::DEFAULT );
 
-	//-- Show detected (drawn) keypoints
+	//Display detected (drawn) keypoints
 	imshow("Keypoints 1", img_keypoints_1 );
+	
+	//imshow("dude", H );
+	
+
 
 	
-	
+	//For performance eval
+	int64 t1 = cv::getTickCount();
+	double run_time = (t1-t0)/cv::getTickFrequency();
+	std::cout << "Time to run" << run_time << std::endl;
 
-
-	
 
     while (cv::waitKey() != 27)
         ;
