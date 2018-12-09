@@ -36,34 +36,29 @@ int ct = 0;
 int erosion_size = 5;
 int dilation_size = 5;
 
-
-
-
-
-//std::vector<Point> FindCircles(Mat circles_hue_image)
+//std::vector<Point> FindCircles(Mat circles_hsv_image)
 //{
 	//std::vector<Point> center;
-
-void FindCircles(const cv::Mat& circles_hue_image)
+cv::Mat FindCircles( const cv::Mat& circles_hsv_image)
 {
-	//Find countours--------------------------------------------------------------------
+	cv::Mat drawing = cv::Mat::zeros( circles_hsv_image.size(), CV_8UC3 );
+	std::cout << drawing.type() << "rharha\n" ;
+	//Find countours-------------------------------------------------------------
 	//Alternative to HoughCircles, should work better on hard sequences.
 	//Using code from Lab week 9 (guest lecture)
 
 	//Invert the colors so that the contour will work
-	cv::bitwise_not ( circles_hue_image, circles_hue_image );
-	//imshow( "Inverse", circles_hue_image );
+	cv::bitwise_not ( circles_hsv_image, circles_hsv_image );
 
 	std::vector<std::vector<Point> > contours;
 	std::vector<Vec4i> hierarchy;
 	/// Find contours
-	findContours( circles_hue_image, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+	cv::findContours( circles_hsv_image, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
 
 	// Start random number generator with a known seed, for color labeling
 	RNG rng(12345);
 
 	/// Draw contours for every oject in the image
-	Mat drawing = Mat::zeros( circles_hue_image.size(), CV_8UC3 );
 	for( int i = 0; i< contours.size(); i++ )
 	{
 		//For the center bit
@@ -85,14 +80,14 @@ void FindCircles(const cv::Mat& circles_hue_image)
 		if(compactness < 0.8)
 		{
 			// Draw contour for things smaller than
-			//Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
-			//drawContours( drawing, contours, i, color, 1, 8, hierarchy, 0, Point() );
+			Scalar color = cv::Scalar( 0, 0, 255);
+			cv::drawContours( drawing, contours, i, color, 1, 8, hierarchy, 0, Point());
 		}
 		else
 		{
 			// Circle found, draw contour
-			Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
-			drawContours( drawing, contours, i, color, 4, 8, hierarchy, 0, Point() );
+			Scalar color = cv::Scalar( 0, 255, 0);
+			cv::drawContours( drawing, contours, i, color, 4, 8, hierarchy, 0, Point());
 
 			//Calculate the centers
 			//Getting this to work was waaaay harder than it should have been.
@@ -100,23 +95,10 @@ void FindCircles(const cv::Mat& circles_hue_image)
 			minEnclosingCircle(contours[i], center, radius);
 			//Printin the centers
 			std::cout << "Circle Center: " << center << std::endl;
-
-			imshow( "Contours", drawing );
-			//Center_Red[i] = center;
-
 		}
-
-
-
 	}
-
-
-	while (waitKey() != 27)
-        ; // (do nothing)
-
-
+	return drawing;
 }
-
 
 int main(int argc, char* argv[])
 {
@@ -135,85 +117,103 @@ int main(int argc, char* argv[])
 	std::string folder = parser.get<std::string>("@path");
 	folder += "*.png";
 
+	cv::namedWindow(folder, cv::WINDOW_NORMAL);
 	//Load multiple images
 	/* DOC : http://answers.opencv.org/question/58078/reading-a-sequence-of-files-within-a-folder/ */
 	// notice here that we are using the Opencv's embedded "String" class
 	vector<String> filenames;
-    //String folder = "../data/marker_color/*.png"; // again we are using the Opencv's embedded "String" class
-    glob(folder, filenames); // new function that does the job ;-)
+  glob(folder, filenames);
 
-    for(size_t i = 0; i < filenames.size(); ++i)
-    {
+	for(size_t i = 0; i < filenames.size(); ++i)
+  {
+		// Preparation of the output
+		cv::Mat matArrayOutputLine1[2];
+		cv::Mat matArrayOutputLine2[2];
+		cv::Mat matArrayOutputLine3[2];
+
 		//Load the image
-        Mat img = imread(filenames[i]);
-		cv::imshow("Original Image", img);
-		//Convert to grey
-		//cv::Mat gray;
-		//cv::cvtColor(src, gray, cv::COLOR_BGR2GRAY);
+    Mat img = imread(filenames[i]);
+		if(!img.data) {
+			cerr << "Problem loading image!!!" << endl;
+			return 0;
+		}
 
-        if(!img.data)
-            cerr << "Problem loading image!!!" << endl;
+		// Output
+		matArrayOutputLine1[0] = img;
 
-        /* do whatever you want with your images here */
+		// Isolate Circles by color------------------------------------------------
 
-// Isolate Circles by color----------------------------------------------------------------------
-
-		//https://solarianprogrammer.com/2015/05/08/detect-red-circles-image-using-opencv/
+		/* DOC : https://solarianprogrammer.com/2015/05/08/detect-red-circles-image-using-opencv/ */
 		// Convert input image to HSV
 		cv::Mat hsv_image;
 		cv::cvtColor(img, hsv_image, cv::COLOR_BGR2HSV);
 
 		//Threshold the HSV image, keep only the red pixels
-		cv::Mat red_hue_range;
-		cv::inRange(hsv_image, cv::Scalar(0, 151, 0), cv::Scalar(023, 255, 255), red_hue_range);
-		//cv::imshow("HSV Image", red_hue_range);
+		cv::Mat red_hsv_range;
+		cv::inRange(hsv_image, cv::Scalar(0, 151, 0), cv::Scalar(023, 255, 255), red_hsv_range);
+
+		// output
+		matArrayOutputLine2[0] = red_hsv_range;
 
 		//Threshold the HSV image, keep only the blue pixels
-		cv::Mat blue_hue_range;
-		cv::inRange(hsv_image, cv::Scalar(50, 100, 10), cv::Scalar(180, 200, 150), blue_hue_range);
+		cv::Mat blue_hsv_range;
+		cv::inRange(hsv_image, cv::Scalar(50, 100, 10), cv::Scalar(180, 200, 150), blue_hsv_range);
 
-		// Combine the above two images
-		cv::Mat circles_hue_image;
-		cv::addWeighted(red_hue_range, 1.0, blue_hue_range, 1.0, 0.0, circles_hue_image);
+		// output
+		matArrayOutputLine3[0] = blue_hsv_range;
 
-		//connected component labeling could be another option to look into
-		//Dialate to get rid of isoled pixels and some noise
+		// Connected component labeling could be another option to look into
 		cv::Mat elementD = getStructuringElement( MORPH_RECT,
                      Size( 2*dilation_size + 1, 2*dilation_size+1 ),
                      Point( dilation_size, dilation_size ) );
-		dilate( circles_hue_image, circles_hue_image, elementD );
-		//cv::imshow("Dialated", circles_hue_image);
 
-		//Erode
+		// Dialate to get rid of isoled pixels and some noise
+		dilate( red_hsv_range, red_hsv_range, elementD);
+		dilate( blue_hsv_range, blue_hsv_range, elementD);
+
+		// Erode
 		cv::Mat elementE = getStructuringElement( MORPH_RECT,
                        Size( 2*erosion_size + 1, 2*erosion_size+1 ),
                        Point( erosion_size, erosion_size ) );
-		cv::erode( circles_hue_image, circles_hue_image, elementE );
-		//cv::imshow("Eroded", circles_hue_image);
+		cv::erode( red_hsv_range, red_hsv_range, elementE);
+		cv::erode( blue_hsv_range, blue_hsv_range, elementE);
 
-		//Blur image
-		cv::GaussianBlur(circles_hue_image, circles_hue_image, cv::Size(9, 9), 2, 2);
-		//cv::imshow("Isolated circles blurred", circles_hue_image);
+		// Blur image
+		cv::GaussianBlur( red_hsv_range, red_hsv_range, cv::Size(9, 9), 2, 2);
+		cv::GaussianBlur( blue_hsv_range, blue_hsv_range, cv::Size(9, 9), 2, 2);
 
+		// Find the red circle
+		matArrayOutputLine2[1] = FindCircles( red_hsv_range);
 
-//Find the red circle----------------------------------------------------------------------
-	cv::imshow("HSV Red Image", red_hue_range);
-	FindCircles(red_hue_range);
-	//cv::Mat red_point = FindCircles(red_hue_range);
-	//std::vector<Point> Center_Red;
-	//Center_Red = FindCircles(red_hue_range);
-	//std::cout << "Red Circle Center: " << Center_Red << std::endl;
-//Find blue circle ----------------------------------------------------------------------
-	cv::imshow("HSV Blue Image", blue_hue_range);
-	FindCircles(blue_hue_range);
-	//FindCircles(circles_hue_image);
+		// Find blue circle
+		matArrayOutputLine3[1] = FindCircles( blue_hsv_range);
 
+		matArrayOutputLine1[1] = img;
 
-	//End----------------
-    }
+		// Ouput the pictures
+		/* DOC : https://docs.opencv.org/3.4.0/d2/de8/group__core__array.html#gaf9771c991763233866bf76b5b5d1776f */
 
+		cv::cvtColor( matArrayOutputLine2[0], matArrayOutputLine2[0], cv::COLOR_GRAY2BGR);
+		cv::cvtColor( matArrayOutputLine3[0], matArrayOutputLine3[0], cv::COLOR_GRAY2BGR);
 
+		cv::Mat outL1;
+		cv::hconcat( matArrayOutputLine1, 2, outL1);
 
+		cv::Mat outL2;
+		cv::hconcat( matArrayOutputLine2, 2, outL2);
 
+		cv::Mat outL3;
+		cv::hconcat( matArrayOutputLine3, 2, outL3);
 
+		/* DOC : https://docs.opencv.org/3.4.0/d2/de8/group__core__array.html#ga744f53b69f6e4f12156cdde4e76aed27 */
+		cv::Mat output;
+		cv::Mat outC[] = { outL1, outL2, outL3};
+		cv::vconcat( outC, 3, output);
+
+		cv::imshow(folder, output);
+
+		while (waitKey() != 27)
+			; // (do nothing)
+	}
+	std::cout << "END" << std::endl;
 }
