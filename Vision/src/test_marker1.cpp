@@ -38,6 +38,7 @@ int dilation_size = 5;
 
 cv::Mat FindCircles( const cv::Mat& circles_hsv_image, std::vector<Point> &center)
 {
+	
 	cv::Mat drawing = cv::Mat::zeros( circles_hsv_image.size(), CV_8UC3 );
 	std::cout << drawing.type() << "rharha\n" ;
 	//Find countours-------------------------------------------------------------
@@ -180,7 +181,8 @@ std::vector<Point> algoFind3Points( const std::vector<Point> center) {
 
 int main(int argc, char* argv[])
 {
-
+	//For performance eval
+	int64 t0 = cv::getTickCount();
 	cv::CommandLineParser parser(argc, argv,
 			"{help     |                  | print this message}"
 			"{@path  | ../data/marker_color/ | path}"
@@ -307,9 +309,16 @@ int main(int argc, char* argv[])
 		cv::vconcat( outC, 3, output);
 
 		cv::imshow(folder, output);
+		
+		//For performance eval
+		int64 t1 = cv::getTickCount();
+		double run_time = (t1-t0)/cv::getTickFrequency();
+		std::cout << "Time to run" << run_time << std::endl;
 
 		while (waitKey() != 27)
 			; // (do nothing)
 	}
+	
+	
 	std::cout << "END" << std::endl;
 }
