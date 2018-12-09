@@ -55,9 +55,6 @@
         </property>
        </widget>
       </item>
-      <item>
-       <widget class="QCalendarWidget" name="_calendar"/>
-      </item>
      </layout>
     </item>
    </layout>

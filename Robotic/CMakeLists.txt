@@ -30,8 +30,14 @@ LINK_DIRECTORIES( ${ROBWORK_LIBRARY_DIRS} )
 # Add the source files to build
 SET(SrcFiles src/main.cpp)
 
+# Add the library files to build
+SET(LibFiles src/Tracking.cpp)
+
+add_library(myLibrary ${LibFiles})
+
 # The shared library to build:
 ADD_EXECUTABLE(main ${SrcFiles})
 TARGET_LINK_LIBRARIES(main ${ROBWORK_LIBRARIES})
+TARGET_LINK_LIBRARIES(main myLibrary)
 
 MESSAGE(${PROJECT_NAME} " done!")
