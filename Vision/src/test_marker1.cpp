@@ -36,10 +36,7 @@ int ct = 0;
 int erosion_size = 5;
 int dilation_size = 5;
 
-//std::vector<Point> FindCircles(Mat circles_hsv_image)
-//{
-	//std::vector<Point> center;
-cv::Mat FindCircles( const cv::Mat& circles_hsv_image)
+cv::Mat FindCircles( const cv::Mat& circles_hsv_image, std::vector<Point> &center)
 {
 	cv::Mat drawing = cv::Mat::zeros( circles_hsv_image.size(), CV_8UC3 );
 	std::cout << drawing.type() << "rharha\n" ;
@@ -61,8 +58,6 @@ cv::Mat FindCircles( const cv::Mat& circles_hsv_image)
 	/// Draw contours for every oject in the image
 	for( int i = 0; i< contours.size(); i++ )
 	{
-		//For the center bit
-		Point2f center;
 		//std::vector<Point> center;
 		float radius;
 		// Calculate perimeter length
@@ -76,6 +71,7 @@ cv::Mat FindCircles( const cv::Mat& circles_hsv_image)
 
 		double compactness = (4 * 3.141592 * area) / (perimeter * perimeter);
 		printf("perimeter: %8.3f  area: %8.3f   compactness: %8.3f\n", perimeter, area, compactness);
+
 
 		if(compactness < 0.8)
 		{
@@ -92,9 +88,17 @@ cv::Mat FindCircles( const cv::Mat& circles_hsv_image)
 			//Calculate the centers
 			//Getting this to work was waaaay harder than it should have been.
 			//https://docs.opencv.org/2.4/doc/tutorials/imgproc/shapedescriptors/bounding_rects_circles/bounding_rects_circles.html
-			minEnclosingCircle(contours[i], center, radius);
+			//minEnclosingCircle(contours[i], center, radius);
 			//Printin the centers
-			std::cout << "Circle Center: " << center << std::endl;
+			//std::cout << "Circle Center: " << center << std::endl;
+
+			// Get the moments of the contour
+			cv::Moments mu = moments( contours[i], false );
+
+			///  Get the mass centers:
+  		Point mc = Point2f( mu.m10/mu.m00 , mu.m01/mu.m00 );
+			std::cout << "Circle Center from Moments: " << mc << std::endl;
+			center.push_back( mc);
 		}
 	}
 	return drawing;
@@ -182,11 +186,16 @@ int main(int argc, char* argv[])
 		cv::GaussianBlur( red_hsv_range, red_hsv_range, cv::Size(9, 9), 2, 2);
 		cv::GaussianBlur( blue_hsv_range, blue_hsv_range, cv::Size(9, 9), 2, 2);
 
+		// Storage of the centers
+		std::vector<Point> center;
+
 		// Find the red circle
-		matArrayOutputLine2[1] = FindCircles( red_hsv_range);
+		matArrayOutputLine2[1] = FindCircles( red_hsv_range, center);
 
 		// Find blue circle
-		matArrayOutputLine3[1] = FindCircles( blue_hsv_range);
+		matArrayOutputLine3[1] = FindCircles( blue_hsv_range, center);
+
+		std::cout << "Number of centers : " << center.size() << std::endl;
 
 		matArrayOutputLine1[1] = img;
 
