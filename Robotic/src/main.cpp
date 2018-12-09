@@ -42,6 +42,7 @@ int main() {
   tracker.state = wc->getDefaultState();
   rw::math::Q qq(7,0,-0.65,0,1.80,0,0.42,0);
   tracker.q = qq;
+  tracker.qInit = qq;
   tracker.device->setQ( tracker.q, tracker.state);
   tracker.deltaT = 1;
   tracker.f = 823;
@@ -62,7 +63,8 @@ int main() {
 
   std::cout << "UVref : " << tracker.UVref << std::endl;
 
-  tracker.superLoop(true);
+  //tracker.superLoop(false);
+  tracker.testError_from_deltaT();
 
   std::cout << "END" << std::endl;
   return 0;

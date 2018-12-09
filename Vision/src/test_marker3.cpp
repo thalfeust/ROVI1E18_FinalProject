@@ -17,7 +17,7 @@ Todo
 manual fix it
 
 do an analyse, not match
-cause it is interesting point, few variences 
+cause it is interesting point, few variences
 
 detect the corners
 
@@ -100,7 +100,7 @@ int main(int argc, char* argv[])
     cv::Mat img2 = cv::imread(filepath2);
 	//cv::Mat img1 = cv::imread("../data/marker_4.png", 1);
 	//cv::Mat img2 = cv::imread("../data/marker_corny/marker_corny_01.png", 1);
-	//Throw error if image is empty or does not load. 
+	//Throw error if image is empty or does not load.
 	if (img1.empty()) {
         std::cout << "Input image not found Image 1\n";
         return 1;
@@ -109,20 +109,20 @@ int main(int argc, char* argv[])
         std::cout << "Input image not found Image 2\n";
         return 1;
     }
-	
+
 	//look_for_match(img1, img2);
-	
+
 	// Construct detector
     cv::Ptr<cv::Feature2D> detector;
     //std::string features_type = parser.get<std::string>("features");
-	
+
 	//Sift or surf
 	//https://docs.opencv.org/3.0-beta/doc/py_tutorials/py_feature2d/py_sift_intro/py_sift_intro.html
 	//https://docs.opencv.org/3.0-beta/doc/py_tutorials/py_feature2d/py_surf_intro/py_surf_intro.html
-	
+
 	detector = cv::xfeatures2d::SIFT::create();
 	//detector = cv::xfeatures2d::SURF::create();
-	
+
     // Detect keypoints and compute descriptors
     std::vector<cv::KeyPoint> keypoints1, keypoints2;
     cv::Mat descriptors1, descriptors2;
@@ -132,7 +132,7 @@ int main(int argc, char* argv[])
     // Construct matcher
     cv::Ptr<cv::DescriptorMatcher> matcher;
     //std::string matcher_type = parser.get<std::string>("matcher");
-		
+
 	//Creating BFMatcher Flann Based
 	matcher = cv::FlannBasedMatcher::create();
 
@@ -199,6 +199,8 @@ int main(int argc, char* argv[])
     std::vector<cv::Point2f> bb2;
     cv::perspectiveTransform(bb1, bb2, H);
 
+    std::cout << bb2 <<"\n";
+
     // Visualize the result
     cv::Mat img_out;
     cv::drawMatches(img1, matched1,
@@ -208,10 +210,11 @@ int main(int argc, char* argv[])
                     inlier_mask); // Draw only inliers
     draw_bb(img_out, bb1);
     draw_bb(img_out, bb2, cv::Point2f(img1.cols, 0)); // Offset by img1.cols in the x direction
+    cv::namedWindow("Matches", cv::WINDOW_NORMAL);
     cv::imshow("Matches", img_out);
 
-	
-	
+
+
 //ROI--------------------------------------------
 	//Select and cut the region of interest
 	//http://opencv-help.blogspot.com/2013/02/how-to-extract-subimage-from-image-in.html
@@ -238,23 +241,14 @@ int main(int argc, char* argv[])
 	//-- Show detected (drawn) keypoints
 	imshow("Keypoints 1", img_keypoints_1 );
 
-	
-	
 
 
-	
+
+
+
 
     while (cv::waitKey() != 27)
         ;
 
     return 0;
 }
-
-	
-	
-	
-	
-	
-	
-	
-	

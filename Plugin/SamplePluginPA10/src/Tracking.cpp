@@ -46,23 +46,6 @@ void Tracking::getTransformMotions( std::string path) {
   TransformMotions = TransformMotionsCurrent;
 }
 
-void Tracking::testError_from_deltaT() {
-  for( float i=0.05; i<=1; i+=0.05) {
-    device->setQ( qInit, state);
-    deltaT = i;
-    errorDUV.clear();
-    superLoop( true);
-    //std::cout << deltaT << " : [";
-    std::cout << "[";
-    for( int j=0; j<errorDUV.size(); j++) {
-      std::cout << errorDUV[j] << ",";
-    }
-    std::cout << ";\n";
-  }
-  std::cout << "]\n";
-}
-
-// juste the main to loop to get each dQ.
 void Tracking::superLoop( bool optionStoreTest) {
 
     // Get the velocity limit
@@ -87,7 +70,6 @@ void Tracking::superLoop( bool optionStoreTest) {
           }
           if( reachable) {
             q += result.dq[j];
-
             if( j!=result.dq.size()-1) {
               accessible[i] = 1;
             }else {
@@ -107,19 +89,12 @@ void Tracking::superLoop( bool optionStoreTest) {
 
       // Update the workcell
       device->setQ( q, state);
-
-      if( optionStoreTest) {
-        errorDUV.push_back( get_du_dv(i).norm2());
-      }
-      std::cout << accessible[i] << " xxxxxxxxx\n";
     }
 
-    if( !optionStoreTest) {
-      // Print the results
-      std::cout << "\n\n\nQ results : " << std::endl;
-      for (unsigned int i=0; i<TransformMotions.size(); i++) {
-        std::cout << accessible[i] << "\t" << qStorage[i] << std::endl;
-      }
+    // Print the results
+    std::cout << "\n\n\nQ results : " << std::endl;
+    for (unsigned int i=0; i<TransformMotions.size(); i++) {
+      std::cout << accessible[i] << "\t" << qStorage[i] << std::endl;
     }
 }
 
@@ -175,11 +150,7 @@ dq_from_dUV_computation Tracking::algorithm1( int index) {
     rw::math::Q dq( rw::math::LinearAlgebra::pseudoInverse(Zimage.e())*currentDUV.e());
 
     // Update the result of the function
-    if(results.iterations > 1) {
-        results.dq.push_back( dq+results.dq[ results.iterations+1]);
-    }else {
-        results.dq.push_back( dq);
-    }
+    results.dq.push_back( dq);
     results.iterations++;
 
     // Update the state of the joints
@@ -190,9 +161,6 @@ dq_from_dUV_computation Tracking::algorithm1( int index) {
 
     // Compute the new du and dv
     currentDUV = get_du_dv( index);
-    std::cout << "Algo1 " << currentDUV.norm2() << "\n";
-
-    results.error.push_back( currentDUV.norm2());
 
     //std::cout << "currentDUV from Algo1 : \n" << currentDUV << std::endl;
   }

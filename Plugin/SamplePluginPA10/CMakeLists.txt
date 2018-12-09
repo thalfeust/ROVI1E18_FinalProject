@@ -1,12 +1,12 @@
 #####################################################
 # Template for building RobWork dependent projects
-# - the src should contain code for putting into libraries 
+# - the src should contain code for putting into libraries
 # - the plugins contain code for multiple RobWorkStudio plugins
-# - the test for testing 
+# - the test for testing
 # - the example dir for illustrativ examples of your project
 #
 # Use config.cmake to change default settings and edit this
-# file for adding additional dependencies to external projects  
+# file for adding additional dependencies to external projects
 #####################################################
 
 #
@@ -39,7 +39,7 @@ MESSAGE("-- Build type: " ${CMAKE_BUILD_TYPE})
 
 # Use RobWork
 MESSAGE("-- RobWork root: " ${RW_ROOT})
-SET(RobWork_DIR ${RW_ROOT}/cmake) 
+SET(RobWork_DIR ${RW_ROOT}/cmake)
 FIND_PACKAGE(RobWork REQUIRED)
 INCLUDE_DIRECTORIES( ${ROBWORK_INCLUDE_DIRS} )
 LINK_DIRECTORIES( ${ROBWORK_LIBRARY_DIRS} )
@@ -75,7 +75,9 @@ QT5_ADD_RESOURCES(RccSrcFiles src/resources.qrc)
 # Add the source files to build
 SET(SrcFiles src/SamplePlugin.cpp ${UIS_OUT_H})
 
+
 # The shared library to build:
 ADD_LIBRARY(${PROJECT_NAME} MODULE ${SrcFiles} ${MocSrcFiles}  ${RccSrcFiles})
+ADD_LIBRARY( mylibrary src/Tracking.cpp)
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${ROBWORKSTUDIO_LIBRARIES} ${ROBWORK_LIBRARIES} ${OpenCV_LIBS})
-
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} mylibrary)

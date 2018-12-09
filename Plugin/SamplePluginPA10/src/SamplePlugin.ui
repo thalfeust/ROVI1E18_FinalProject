@@ -16,27 +16,58 @@
   <widget class="QWidget" name="dockWidgetContents">
    <layout class="QVBoxLayout" name="verticalLayout_2">
     <item>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <property name="sizeConstraint">
+       <enum>QLayout::SetMinimumSize</enum>
+      </property>
+      <item>
+       <widget class="QCheckBox" name="_checkBox_color">
+        <property name="text">
+         <string>Marker : Color</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="_checkBox_corny">
+        <property name="text">
+         <string>Marker : Corny</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QCheckBox" name="_checkBox">
+      <property name="text">
+       <string>Tracking with 3 points</string>
+      </property>
+     </widget>
+    </item>
+    <item>
      <layout class="QVBoxLayout" name="verticalLayout">
+      <property name="sizeConstraint">
+       <enum>QLayout::SetMinimumSize</enum>
+      </property>
       <item>
-       <widget class="QPushButton" name="_btn0">
-        <property name="text">
-         <string>PushButton0</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="_btn1">
-        <property name="text">
-         <string>PushButton1</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="_checkBox">
-        <property name="text">
-         <string>CheckBox</string>
-        </property>
-       </widget>
+       <layout class="QHBoxLayout" name="_2">
+        <item>
+         <widget class="QPushButton" name="_btn1">
+          <property name="text">
+           <string>Play</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="_btn0">
+          <property name="text">
+           <string>Update</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
       <item>
        <widget class="QSpinBox" name="_spinBox"/>

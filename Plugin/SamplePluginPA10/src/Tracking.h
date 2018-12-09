@@ -6,7 +6,6 @@
 
 struct dq_from_dUV_computation {
   std::vector<rw::math::Q> dq; // every dq used to track the marker
-  std::vector<double> error; // error in posion for each steps
   int iterations; // number of iterations
 } ;
 
@@ -19,17 +18,13 @@ public:
   rw::kinematics::Frame* cam_frame;
   rw::kinematics::MovableFrame* marker_frame;
   rw::math::Q q;
-  rw::math::Q qInit;
   rw::math::Vector2D<double> UVref;
-
-  std::vector<double> errorDUV;
 
   float f;
   float z;
   float deltaT;
 
   void getTransformMotions( std::string path);
-  void testError_from_deltaT();
   void superLoop( bool optionStoreTest);
   void compute( int index);
   dq_from_dUV_computation algorithm1( int index);
