@@ -1,11 +1,5 @@
 /*
-RoVi1
-Planar matching
-
-<<exercise-description>>
-You must judge the quality of each matched descriptor pair, and then use the best
-to find the perspective transformation between the two input images
-`book_cover.jpg` and `book_scene.jpg`
+code from:RoVi1 Planar matching
 
 1. Filter out bad matches.
 2. Find the homography between the books in the two images.
@@ -19,9 +13,7 @@ For help and inspiration, see
 <<->>
 
 
-
 Todo
-region of inetrest in the corner
 manual fix it
 
 do an analyse, not match
@@ -35,20 +27,24 @@ Done
 going with surf as it is more resistant
 -flanbassed - why it is better
 Same performance as bruteforce but faster
+-Region of inetrest in the corner
 
 
 
-Version: 6e92b7d
+Version: I have no idea at this point
 */
 
 #include <opencv2/calib3d.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/xfeatures2d.hpp>
+#include <opencv2/features2d.hpp>
 
 #include <iostream>
 
 using namespace cv;
+using namespace cv::xfeatures2d;
+
 
 // Extract the coordinates of the keypoints
 std::vector<cv::Point2f> keypoint_coordinates(const std::vector<cv::KeyPoint>& keypoints)
@@ -75,6 +71,11 @@ void draw_bb(cv::Mat& img,
     cv::line(img, bb[bb.size() - 1] + offset, bb[0] + offset, cv::Scalar(0, 0, 255), 3);
 }
 
+
+
+
+void look_for_match(cv::Mat& img1, cv::Mat& img2)
+{}
 
 
 
@@ -109,7 +110,9 @@ int main(int argc, char* argv[])
         return 1;
     }
 	
-    // Construct detector
+	//look_for_match(img1, img2);
+	
+	// Construct detector
     cv::Ptr<cv::Feature2D> detector;
     //std::string features_type = parser.get<std::string>("features");
 	
@@ -161,7 +164,7 @@ int main(int argc, char* argv[])
 
     if (num_matches < 4) {
         std::cout << "Too few matches!" << std::endl;
-        return 0;
+        //return 0;
     }
 
     // 2. Calculate perspective transformation
@@ -174,7 +177,7 @@ int main(int argc, char* argv[])
 
     if (H.empty()) {
         std::cout << "H matrix could not be estimated!" << std::endl;
-        return 0;
+        //return 0;
     }
 
     int num_inliers = cv::countNonZero(inlier_mask);
@@ -206,7 +209,7 @@ int main(int argc, char* argv[])
     draw_bb(img_out, bb1);
     draw_bb(img_out, bb2, cv::Point2f(img1.cols, 0)); // Offset by img1.cols in the x direction
     cv::imshow("Matches", img_out);
-	
+
 	
 	
 //ROI--------------------------------------------
@@ -214,6 +217,27 @@ int main(int argc, char* argv[])
 	//http://opencv-help.blogspot.com/2013/02/how-to-extract-subimage-from-image-in.html
 	cv::Mat subImage(img1, cv::Rect(0, 0, 100, 100));
 	cv::imshow("ROI", subImage);
+	// Detect keypoints and compute descriptors
+    //std::vector<cv::KeyPoint> keypoints3;
+    //cv::Mat descriptors3;
+    //detector->detectAndCompute(subImage, cv::noArray(), keypoints3, descriptors3);
+	//std::vector<cv::KeyPoint> matched3;
+	 int minHessian = 400;
+    //cv::Ptr<cv::Feature2D> detector;
+
+
+	Ptr<SURF> detectors = SURF::create( minHessian );
+	std::vector<KeyPoint> keypoints_1;
+	detectors->detect( subImage, keypoints_1 );
+
+	//-- Draw keypoints
+	Mat img_keypoints_1;
+
+	drawKeypoints( subImage, keypoints_1, img_keypoints_1, Scalar::all(-1), DrawMatchesFlags::DEFAULT );
+
+	//-- Show detected (drawn) keypoints
+	imshow("Keypoints 1", img_keypoints_1 );
+
 	
 	
 
