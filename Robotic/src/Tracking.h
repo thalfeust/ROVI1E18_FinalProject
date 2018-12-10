@@ -5,8 +5,9 @@
 #include <stdlib.h>
 
 struct dq_from_dUV_computation {
-  std::vector<rw::math::Q> dq; // every dq used to track the marker
+  std::vector<rw::math::Q> dq; // every q used to track the marker
   std::vector<double> error; // error in posion for each steps
+  double maxError;
   int iterations; // number of iterations
 } ;
 

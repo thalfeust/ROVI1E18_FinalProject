@@ -83,46 +83,52 @@ int main(int argc, char* argv[])
 	//For performance eval
 	int64 t0 = cv::getTickCount();
 
-    cv::CommandLineParser parser(argc, argv,
-        "{help     |                  | print this message}"
-		"{@image1  | ../data/marker_4.png | image1 path}"
-        "{@image2  | ../data/marker_corny/marker_corny_01.png | image2 path}"
-    );
+  cv::CommandLineParser parser(argc, argv,
+      "{help     |                      | print this message}"
+	    "{@image1  | ../data/marker_4.png | image1 path}"
+      "{@path    | ../data/marker_corny/| path of sources}"
+  );
 
-    if (parser.has("help")) {
-        parser.printMessage();
-        return 0;
-    }
+  if (parser.has("help")) {
+      parser.printMessage();
+      return 0;
+  }
 
-    // Load images
-    std::string filepath1 = parser.get<std::string>("@image1");
-    std::string filepath2 = parser.get<std::string>("@image2");
-    cv::Mat img1 = cv::imread(filepath1);
-    cv::Mat img2 = cv::imread(filepath2);
-	//cv::Mat img1 = cv::imread("../data/marker_4.png", 1);
-	//cv::Mat img2 = cv::imread("../data/marker_corny/marker_corny_01.png", 1);
+  // Load images
+  std::string filepath1 = parser.get<std::string>("@image1");
+  cv::Mat img1 = cv::imread(filepath1);
+
 	//Throw error if image is empty or does not load.
 	if (img1.empty()) {
         std::cout << "Input image not found Image 1\n";
         return 1;
-    }
-	if (img2.empty()) {
-        std::cout << "Input image not found Image 2\n";
-        return 1;
-    }
+  }
 
-	//look_for_match(img1, img2);
+  // Get the path of the folder
+  std::string folder = parser.get<std::string>("@path");
+  folder += "*.png";
 
-	// Construct detector
+  cv::namedWindow(folder, cv::WINDOW_NORMAL);
+
+  //Load multiple images
+	/* DOC : http://answers.opencv.org/question/58078/reading-a-sequence-of-files-within-a-folder/ */
+	// notice here that we are using the Opencv's embedded "String" class
+	std::vector<String> filenames;
+  glob(folder, filenames);
+
+  for(size_t i = 0; i < filenames.size(); ++i)
+  {
+
+    Mat img2 = imread(filenames[i]);
+
+    // Construct detector
     cv::Ptr<cv::Feature2D> detector;
-    //std::string features_type = parser.get<std::string>("features");
+    //Sift or surf
+    //https://docs.opencv.org/3.0-beta/doc/py_tutorials/py_feature2d/py_sift_intro/py_sift_intro.html
+    //https://docs.opencv.org/3.0-beta/doc/py_tutorials/py_feature2d/py_surf_intro/py_surf_intro.html
 
-	//Sift or surf
-	//https://docs.opencv.org/3.0-beta/doc/py_tutorials/py_feature2d/py_sift_intro/py_sift_intro.html
-	//https://docs.opencv.org/3.0-beta/doc/py_tutorials/py_feature2d/py_surf_intro/py_surf_intro.html
-
-	detector = cv::xfeatures2d::SIFT::create();
-	//detector = cv::xfeatures2d::SURF::create();
+    detector = cv::xfeatures2d::SIFT::create();
+    //detector = cv::xfeatures2d::SURF::create();
 
     // Detect keypoints and compute descriptors
     std::vector<cv::KeyPoint> keypoints1, keypoints2;
@@ -132,10 +138,9 @@ int main(int argc, char* argv[])
 
     // Construct matcher
     cv::Ptr<cv::DescriptorMatcher> matcher;
-    //std::string matcher_type = parser.get<std::string>("matcher");
 
-	//Creating BFMatcher Flann Based
-	matcher = cv::FlannBasedMatcher::create();
+    //Creating BFMatcher Flann Based
+    matcher = cv::FlannBasedMatcher::create();
 
     // Find 2 nearest correspondences for each descriptor
     std::vector<std::vector<cv::DMatch>> initial_matches;
@@ -151,12 +156,12 @@ int main(int argc, char* argv[])
     int idx = 0;
 
     for (const auto& match : initial_matches) {
-        if (match[0].distance < 0.8f * match[1].distance) {
-            matches.push_back(cv::DMatch(idx, idx, match[0].distance));
-            matched1.push_back(keypoints1[match[0].queryIdx]);
-            matched2.push_back(keypoints2[match[0].trainIdx]);
-            idx++;
-        }
+      if (match[0].distance < 0.8f * match[1].distance) {
+        matches.push_back(cv::DMatch(idx, idx, match[0].distance));
+        matched1.push_back(keypoints1[match[0].queryIdx]);
+        matched2.push_back(keypoints2[match[0].trainIdx]);
+        idx++;
+      }
     }
 
     // We only use the good matches
@@ -164,8 +169,10 @@ int main(int argc, char* argv[])
     std::cout << "Number of good matches: " << num_matches << std::endl;
 
     if (num_matches < 4) {
-        std::cout << "Too few matches!" << std::endl;
-        //return 0;
+      std::cout << "Too few matches!" << std::endl;
+      while (waitKey() != 27)
+        ; // (do nothing)
+      break;
     }
 
     // 2. Calculate perspective transformation
@@ -173,8 +180,10 @@ int main(int argc, char* argv[])
     cv::Mat H = cv::findHomography(keypoint_coordinates(matched1), keypoint_coordinates(matched2), cv::LMEDS, 0, inlier_mask);
 
     if (H.empty()) {
-        std::cout << "H matrix could not be estimated!" << std::endl;
-        //return 0;
+      std::cout << "H matrix could not be estimated!" << std::endl;
+      while (waitKey() != 27)
+        ; // (do nothing)
+      break;
     }
 
     int num_inliers = cv::countNonZero(inlier_mask);
@@ -186,29 +195,49 @@ int main(int argc, char* argv[])
 
     // Bounding box of original object
     std::vector<cv::Point2f> bb1{
-        cv::Point2f(0, 0),
-        cv::Point2f(img1.cols, 0),
-        cv::Point2f(img1.cols, img1.rows),
-        cv::Point2f(0, img1.rows)
+      cv::Point2f(0, 0),
+      cv::Point2f(img1.cols, 0),
+      cv::Point2f(img1.cols, img1.rows),
+      cv::Point2f(0, img1.rows)
     };
 
     // 3. Transform the bounding box points using the transformation matrix H
     std::vector<cv::Point2f> bb2;
     cv::perspectiveTransform(bb1, bb2, H);
 
+    std::vector<Point> trackPoints;
+    trackPoints.push_back(bb2[0]);
+    trackPoints.push_back(bb2[1]);
+    trackPoints.push_back(bb2[2]);
+
     std::cout << bb2 <<"\n";
 
     // Visualize the result
     cv::Mat img_out;
+
+
     cv::drawMatches(img1, matched1,
-                    img2, matched2,
-                    matches, img_out,
-                    cv::Scalar::all(-1), cv::Scalar::all(-1),
-                    inlier_mask); // Draw only inliers
-    draw_bb(img_out, bb1);
-    draw_bb(img_out, bb2, cv::Point2f(img1.cols, 0)); // Offset by img1.cols in the x direction
-    cv::namedWindow("Matches", cv::WINDOW_NORMAL);
-    cv::imshow("Matches", img_out);
+      img2, matched2,
+      matches, img_out,
+      cv::Scalar::all(-1), cv::Scalar::all(-1),
+      inlier_mask); // Draw only inliers
+      draw_bb(img_out, bb1);
+      draw_bb(img_out, bb2, cv::Point2f(img1.cols, 0)); // Offset by img1.cols in the x direction
+
+      if( trackPoints.size()>=3) {
+        circle(img_out, cv::Point (trackPoints[0].x + img1.cols,trackPoints[0].y), 10, cv::Scalar( 0, 255, 0), -1);
+        cv::putText(img_out, "1", cv::Point (trackPoints[0].x + img1.cols,trackPoints[0].y), cv::FONT_HERSHEY_PLAIN, 4,  cv::Scalar( 0, 255, 0), 4);
+        circle(img_out, cv::Point (trackPoints[1].x + img1.cols,trackPoints[1].y), 10, cv::Scalar( 0, 255, 0), -1);
+        cv::putText(img_out, "2", cv::Point (trackPoints[1].x + img1.cols,trackPoints[1].y), cv::FONT_HERSHEY_PLAIN, 4,  cv::Scalar( 0, 255, 0), 4);
+        circle(img_out, cv::Point (trackPoints[2].x + img1.cols,trackPoints[2].y), 10, cv::Scalar( 0, 255, 0), -1);
+        cv::putText(img_out, "3", cv::Point (trackPoints[2].x + img1.cols,trackPoints[2].y), cv::FONT_HERSHEY_PLAIN, 4,  cv::Scalar( 0, 255, 0), 4);
+      }
+
+      cv::imshow( folder, img_out);
+
+      while (waitKey() != 27)
+        ; // (do nothing)
+  }
 
 
 
@@ -232,11 +261,6 @@ int main(int argc, char* argv[])
 
 	//Display detected (drawn) keypoints
 	imshow("Keypoints 1", img_keypoints_1 );
-
-	//imshow("dude", H );
-
-
-
 
 	//For performance eval
 	int64 t1 = cv::getTickCount();

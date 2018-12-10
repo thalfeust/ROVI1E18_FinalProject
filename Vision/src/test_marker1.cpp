@@ -38,9 +38,8 @@ int dilation_size = 5;
 
 cv::Mat FindCircles( const cv::Mat& circles_hsv_image, std::vector<Point> &center)
 {
-	
+
 	cv::Mat drawing = cv::Mat::zeros( circles_hsv_image.size(), CV_8UC3 );
-	std::cout << drawing.type() << "rharha\n" ;
 	//Find countours-------------------------------------------------------------
 	//Alternative to HoughCircles, should work better on hard sequences.
 	//Using code from Lab week 9 (guest lecture)
@@ -57,10 +56,8 @@ cv::Mat FindCircles( const cv::Mat& circles_hsv_image, std::vector<Point> &cente
 	RNG rng(12345);
 
 	/// Draw contours for every oject in the image
-	for( int i = 0; i< contours.size(); i++ )
+	for( unsigned int i = 0; i< contours.size(); i++ )
 	{
-		//std::vector<Point> center;
-		float radius;
 		// Calculate perimeter length
 		double perimeter = arcLength(contours[i], 1);
 		double area = contourArea(contours[i], true);
@@ -309,7 +306,7 @@ int main(int argc, char* argv[])
 		cv::vconcat( outC, 3, output);
 
 		cv::imshow(folder, output);
-		
+
 		//For performance eval
 		int64 t1 = cv::getTickCount();
 		double run_time = (t1-t0)/cv::getTickFrequency();
@@ -318,7 +315,7 @@ int main(int argc, char* argv[])
 		while (waitKey() != 27)
 			; // (do nothing)
 	}
-	
-	
+
+
 	std::cout << "END" << std::endl;
 }

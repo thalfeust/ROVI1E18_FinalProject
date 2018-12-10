@@ -77,7 +77,7 @@ void Tracking::superLoop( bool optionStoreTest) {
       dq_from_dUV_computation result = algorithm1( i);
 
       if(result.dq.size()>0) {
-        for (unsigned j=result.dq.size()-1; j>=0; j--) {
+        /*for (unsigned j=result.dq.size()-1; j>=0; j--) {
           bool reachable = true;
           for (unsigned w=0; w<q.size(); w++) {
             if( result.dq[j][w] / deltaT > qVelocityLimit[w]) {
@@ -100,18 +100,19 @@ void Tracking::superLoop( bool optionStoreTest) {
         }
       }else {
         accessible[i] = 2;
-      }
+      }*/
 
-      // Update the storages;
-      qStorage[i] = q;
+      q += result.dq[result.dq.size()-1];
+    }
 
-      // Update the workcell
-      device->setQ( q, state);
+    // Update the storages;
+    qStorage[i] = q;
 
-      if( optionStoreTest) {
-        errorDUV.push_back( get_du_dv(i).norm2());
-      }
-      std::cout << accessible[i] << " xxxxxxxxx\n";
+    // Update the workcell
+    device->setQ( q, state);
+
+    if( optionStoreTest) {
+      errorDUV.push_back( result.maxError);
     }
 
     if( !optionStoreTest) {
@@ -121,6 +122,7 @@ void Tracking::superLoop( bool optionStoreTest) {
         std::cout << accessible[i] << "\t" << qStorage[i] << std::endl;
       }
     }
+  }
 }
 
 void Tracking::compute( int index) {
@@ -159,6 +161,11 @@ dq_from_dUV_computation Tracking::algorithm1( int index) {
   results.iterations = 0;
 
   rw::math::Q currentQ = q;
+  rw::math::Q currentdQ;
+
+  double maxError = 0;
+
+  rw::math::Q qVelocityLimit = device->getVelocityLimits();
 
   // Comute du and dv
   rw::math::Vector2D<double> currentDUV = get_du_dv( index);
@@ -176,6 +183,25 @@ dq_from_dUV_computation Tracking::algorithm1( int index) {
 
     // Update the result of the function
     if(results.iterations > 1) {
+        currentdQ += dq;
+    }else {
+        currentdQ = dq;
+    }
+
+    bool reachable = true;
+    for (unsigned w=0; w<q.size(); w++) {
+      if( currentdQ[w] / deltaT > qVelocityLimit[w]) {
+        reachable = false;
+        break;
+      }
+    }
+
+    // The robot can't reach the position
+    if( !reachable){
+      break;
+    }
+
+    if(results.iterations > 1) {
         results.dq.push_back( dq+results.dq[ results.iterations+1]);
     }else {
         results.dq.push_back( dq);
@@ -183,7 +209,7 @@ dq_from_dUV_computation Tracking::algorithm1( int index) {
     results.iterations++;
 
     // Update the state of the joints
-    currentQ += dq;
+    currentQ = device->getQ( state) + dq;
     device->setQ( currentQ, state);
 
     //std::cout << "dQ from Algo1 : [" << results.iterations << "]\n" << dq << std::endl;
@@ -192,10 +218,12 @@ dq_from_dUV_computation Tracking::algorithm1( int index) {
     currentDUV = get_du_dv( index);
     std::cout << "Algo1 " << currentDUV.norm2() << "\n";
 
-    results.error.push_back( currentDUV.norm2());
+    maxError = currentDUV.norm2();
 
     //std::cout << "currentDUV from Algo1 : \n" << currentDUV << std::endl;
   }
+  results.maxError = maxError;
+
   return results;
 }
 
@@ -282,6 +310,7 @@ rw::math::Jacobian Tracking::get_Jimage() {
   return Jimage;
 }
 
+// This function is used to get the value of a displacement (du,dv) from the coordinate (x,y,z) of a point on the picture in the coordinate frame of the camera.
 rw::math::Vector2D<double> Tracking::get_du_dv(int index) {
 
   rw::math::Transform3D<double> wTmarker = TransformMotions[index];
