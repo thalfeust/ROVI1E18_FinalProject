@@ -51,6 +51,7 @@ void Tracking::testError_from_deltaT() {
     device->setQ( qInit, state);
     deltaT = i;
     errorDUV.clear();
+
     superLoop( true);
     //std::cout << deltaT << " : [";
     std::cout << "[";
@@ -72,38 +73,14 @@ void Tracking::superLoop( bool optionStoreTest) {
     rw::math::Q qStorage[TransformMotions.size()];
     int accessible[TransformMotions.size()]; // 0 : impossible, 1 : not reachable, 2 : yes
 
+    q = device->getQ(state);
     for (unsigned int i=0; i<TransformMotions.size(); i++) {
 
       dq_from_dUV_computation result = algorithm1( i);
 
       if(result.dq.size()>0) {
-        /*for (unsigned j=result.dq.size()-1; j>=0; j--) {
-          bool reachable = true;
-          for (unsigned w=0; w<q.size(); w++) {
-            if( result.dq[j][w] / deltaT > qVelocityLimit[w]) {
-              reachable = false;
-              break;
-            }
-          }
-          if( reachable) {
-            q += result.dq[j];
-
-            if( j!=result.dq.size()-1) {
-              accessible[i] = 1;
-            }else {
-              accessible[i] = 2;
-            }
-            break;
-          }else {
-            accessible[i] = 0;
-          }
-        }
-      }else {
-        accessible[i] = 2;
-      }*/
-
-      q += result.dq[result.dq.size()-1];
-    }
+          q += result.dq[result.dq.size()-1];
+      }
 
     // Update the storages;
     qStorage[i] = q;
@@ -115,43 +92,15 @@ void Tracking::superLoop( bool optionStoreTest) {
       errorDUV.push_back( result.maxError);
     }
 
-    if( !optionStoreTest) {
-      // Print the results
-      std::cout << "\n\n\nQ results : " << std::endl;
-      for (unsigned int i=0; i<TransformMotions.size(); i++) {
-        std::cout << accessible[i] << "\t" << qStorage[i] << std::endl;
-      }
+  }
+  if( !optionStoreTest) {
+    // Print the results
+    std::cout << "\n\n\nQ results : " << std::endl;
+    for (unsigned int i=0; i<TransformMotions.size(); i++) {
+      std::cout << i << " : " << qStorage[i] << "\nCam : " << cam_frame->wTf(state) << std::endl;
     }
   }
 }
-
-void Tracking::compute( int index) {
-
-    // Get the velocity limit
-    rw::math::Q qVelocityLimit = device->getVelocityLimits();
-
-    marker_frame->setTransform( TransformMotions[index], state);
-
-    dq_from_dUV_computation result = algorithm1( index);
-
-      if(result.dq.size()>0) {
-        for (unsigned j=result.dq.size()-1; j>=0; j--) {
-          bool reachable = true;
-          for (unsigned w=0; w<q.size(); w++) {
-            if( result.dq[j][w] / deltaT > qVelocityLimit[w]) {
-              reachable = false;
-              break;
-            }
-          }
-          if( reachable) {
-            q += result.dq[j];
-          }
-        }
-      }
-
-      // Update the workcell
-      device->setQ( q, state);
-  }
 
 // based on the ex4_2 correction
 dq_from_dUV_computation Tracking::algorithm1( int index) {
@@ -167,8 +116,8 @@ dq_from_dUV_computation Tracking::algorithm1( int index) {
 
   rw::math::Q qVelocityLimit = device->getVelocityLimits();
 
-  // Comute du and dv
-  rw::math::Vector2D<double> currentDUV = get_du_dv( index);
+    // Comute du and dv
+    rw::math::Vector2D<double> currentDUV = get_du_dv( index);
 
   const double epsilon = 1; // precision of 1 pixel
 
@@ -216,8 +165,8 @@ dq_from_dUV_computation Tracking::algorithm1( int index) {
 
     // Compute the new du and dv
     currentDUV = get_du_dv( index);
-    std::cout << "Algo1 " << currentDUV.norm2() << "\n";
 
+    //update the ouput
     maxError = currentDUV.norm2();
 
     //std::cout << "currentDUV from Algo1 : \n" << currentDUV << std::endl;

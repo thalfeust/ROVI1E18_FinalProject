@@ -22,6 +22,10 @@ public:
   rw::math::Q q;
   rw::math::Q qInit;
   rw::math::Vector2D<double> UVref;
+  // tracking 3 points
+  rw::math::Vector2D<double> UVref1;
+  rw::math::Vector2D<double> UVref2;
+  rw::math::Vector2D<double> UVref3;
 
   std::vector<double> errorDUV;
 
@@ -32,7 +36,6 @@ public:
   void getTransformMotions( std::string path);
   void testError_from_deltaT();
   void superLoop( bool optionStoreTest);
-  void compute( int index);
   dq_from_dUV_computation algorithm1( int index);
   rw::math::Jacobian get_Zimage();
   rw::math::Jacobian get_Sq();

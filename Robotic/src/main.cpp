@@ -60,6 +60,11 @@ int main() {
   rw::math::Vector3D<double> P = markerTcam.P();
   rw::math::Vector2D<double> uvref( tracker.f*P(0)/P(2), tracker.f*P(1)/P(2));
   tracker.UVref = uvref;
+  tracker.UVref1 = rw::math::Vector2D<double>( tracker.f*(P(0)+0.15)/P(2), tracker.f*P(1)/P(2));
+  tracker.UVref1 = rw::math::Vector2D<double>( tracker.f*(P(0)+0.15)/P(2), tracker.f*(P(1)+0.15)/P(2));
+  tracker.UVref2 = rw::math::Vector2D<double>( tracker.f*(P(0)-0.15)/P(2), tracker.f*(P(1)+0.15)/P(2));
+  tracker.UVref3 = rw::math::Vector2D<double>( tracker.f*(P(0)+0.15)/P(2), tracker.f*(P(1)-0.15)/P(2));
+
 
   std::cout << "UVref : " << tracker.UVref << std::endl;
 
