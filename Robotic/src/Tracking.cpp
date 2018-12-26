@@ -1,6 +1,10 @@
 #include "Tracking.h"
 
+/* Open the file by the given path in parameter and extract the motions to use.
+ * The motions will be print on the screen iteratively.
+ */
 void Tracking::getTransformMotions( std::string path) {
+
         // Open the file
         std::ifstream myfile;
         myfile.open (path, std::ios::in);
@@ -37,7 +41,7 @@ void Tracking::getTransformMotions( std::string path) {
                 RW_THROW("Motions file not found!");
         }
 
-        // Print the results
+        // Print the extract motions
         for(unsigned int j = 0; j < TransformMotionsCurrent.size(); ++j) {
                 std::cout << "Ts : " << j << " \n" << TransformMotionsCurrent[j] << std::endl;
         }
@@ -46,24 +50,9 @@ void Tracking::getTransformMotions( std::string path) {
         TransformMotions = TransformMotionsCurrent;
 }
 
-void Tracking::testError_from_deltaT() {
-        for( float i=0.05; i<=1; i+=0.05) {
-                device->setQ( qInit, state);
-                deltaT = i;
-                errorDUV.clear();
-
-                superLoop( true);
-                //std::cout << deltaT << " : [";
-                std::cout << "[";
-                for( int j=0; j<errorDUV.size(); j++) {
-                        std::cout << errorDUV[j] << ",";
-                }
-                std::cout << ";\n";
-        }
-        std::cout << "]\n";
-}
-
-// juste the main to loop to get each dQ.
+/* Compute new Q for each motions of the marker using the pinhole model and the
+ * inverse Kinematics.
+ */
 void Tracking::superLoop( bool optionStoreTest) {
 
         // Get the velocity limit
@@ -102,7 +91,10 @@ void Tracking::superLoop( bool optionStoreTest) {
         }
 }
 
-// based on the ex4_2 correction
+/* Compute dQ for a specific motion.
+ * Algorithm adapted from the Newton-Raphson method.
+ * based on the ex4_2 correction
+ */
 dq_from_dUV_computation Tracking::algorithm1( int index) {
 
         // Initialization of the return variable
@@ -114,6 +106,7 @@ dq_from_dUV_computation Tracking::algorithm1( int index) {
 
         double maxError = 0;
 
+        // get the velocity limits
         rw::math::Q qVelocityLimit = device->getVelocityLimits();
 
         // Comute du and dv
@@ -125,7 +118,7 @@ dq_from_dUV_computation Tracking::algorithm1( int index) {
         while( currentDUV.norm2() > epsilon) {
 
                 // Get Zimage from the equation following the (eq.4.34)
-                rw::math::Jacobian Zimage = get_Zimage( );
+                rw::math::Jacobian Zimage = get_Zimage_1points( );
 
                 // based on the way to solve the equation (eq.4.34)
                 rw::math::Q dq( rw::math::LinearAlgebra::pseudoInverse(Zimage.e())*currentDUV.e());
@@ -176,9 +169,10 @@ dq_from_dUV_computation Tracking::algorithm1( int index) {
         return results;
 }
 
-rw::math::Jacobian Tracking::get_Zimage() {
+/* Compute the matrix Zimage from the matrixes Jimage, J and S(q). */
+rw::math::Jacobian Tracking::get_Zimage_1points() {
 
-        // get the Jacobian
+        // get the Jacobian matrix
         rw::math::Jacobian J = device->baseJframe( cam_frame, state);
 
         // get the matrix Sq from baseRcam
@@ -192,9 +186,13 @@ rw::math::Jacobian Tracking::get_Zimage() {
         return Jimage_transpose * Sq * J;
 }
 
+/* Compute the matrix S(q) from camRbase(q) matrix.
+ * Equation based on the Robotic Notes (next to 4.32).
+ */
 rw::math::Jacobian Tracking::get_Sq() {
 
         rw::math::Jacobian Sq(6);
+        // Compute camRbase
         rw::math::Rotation3D<> R = device->baseTframe(cam_frame, state).R();
 
         Sq(0,0) = R(0,0);
@@ -240,6 +238,8 @@ rw::math::Jacobian Tracking::get_Sq() {
         return Sq;
 }
 
+/* Compute the Jimage matrix from the elements (u,v), z and f.
+ */
 rw::math::Jacobian Tracking::get_Jimage() {
 
         rw::math::Jacobian Jimage(2);
@@ -259,7 +259,10 @@ rw::math::Jacobian Tracking::get_Jimage() {
         return Jimage;
 }
 
-// This function is used to get the value of a displacement (du,dv) from the coordinate (x,y,z) of a point on the picture in the coordinate frame of the camera.
+/* This function is used to get the value of a displacement (du,dv) from the
+ * coordinate (x,y,z) of a point on the picture in the coordinate frame of the
+ * camera. The calculation is based on the pin hole model.
+ */
 rw::math::Vector2D<double> Tracking::get_du_dv(int index) {
 
         rw::math::Transform3D<double> wTmarker = TransformMotions[index];
@@ -274,4 +277,21 @@ rw::math::Vector2D<double> Tracking::get_du_dv(int index) {
         rw::math::Vector2D<double> dUV( UVref(0)-UV(0), UVref(1)-UV(1));
 
         return dUV;
+}
+
+void Tracking::testError_from_deltaT() {
+        for( float i=0.05; i<=1; i+=0.05) {
+                device->setQ( qInit, state);
+                deltaT = i;
+                errorDUV.clear();
+
+                superLoop( true);
+                //std::cout << deltaT << " : [";
+                std::cout << "[";
+                for( int j=0; j<errorDUV.size(); j++) {
+                        std::cout << errorDUV[j] << ",";
+                }
+                std::cout << ";\n";
+        }
+        std::cout << "]\n";
 }

@@ -19,36 +19,39 @@
 
 #include "ui_SamplePlugin.h"
 
-class SamplePlugin: public rws::RobWorkStudioPlugin, private Ui::SamplePlugin
+// Project class
+#include "Tracking.hpp"
+
+class SamplePlugin : public rws::RobWorkStudioPlugin, private Ui::SamplePlugin
 {
 Q_OBJECT
 Q_INTERFACES( rws::RobWorkStudioPlugin )
 Q_PLUGIN_METADATA(IID "dk.sdu.mip.Robwork.RobWorkStudioPlugin/0.1" FILE "plugin.json")
 public:
-    SamplePlugin();
-    virtual ~SamplePlugin();
+SamplePlugin();
+virtual ~SamplePlugin();
 
-    virtual void open(rw::models::WorkCell* workcell);
+virtual void open(rw::models::WorkCell* workcell);
 
-    virtual void close();
+virtual void close();
 
-    virtual void initialize();
+virtual void initialize();
 
 private slots:
-    void btnPressed();
-    void timer();
-  
-    void stateChangedListener(const rw::kinematics::State& state);
+void btnPressed();
+void timer();
+
+void stateChangedListener(const rw::kinematics::State& state);
 
 private:
-    static cv::Mat toOpenCVImage(const rw::sensor::Image& img);
+static cv::Mat toOpenCVImage(const rw::sensor::Image& img);
 
-    QTimer* _timer;
+QTimer* _timer;
 
-    rw::models::WorkCell::Ptr _wc;
-    rw::kinematics::State _state;
-    rwlibs::opengl::RenderImage *_textureRender, *_bgRender;
-    rwlibs::simulation::GLFrameGrabber* _framegrabber;
+rw::models::WorkCell::Ptr _wc;
+rw::kinematics::State _state;
+rwlibs::opengl::RenderImage *_textureRender, *_bgRender;
+rwlibs::simulation::GLFrameGrabber* _framegrabber;
 };
 
 #endif /*RINGONHOOKPLUGIN_HPP_*/
