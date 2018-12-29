@@ -65,7 +65,9 @@ void Tracking::superLoop( bool optionStoreTest) {
         q = device->getQ(state);
         for (unsigned int i=0; i<TransformMotions.size(); i++) {
 
-                dq_from_dUV_computation result = algorithm1( i);
+                update_Marker( i);
+
+                dq_from_dUV_computation result = algorithm1( i, true);
 
                 if(result.dq.size()>0) {
                         q += result.dq[result.dq.size()-1];
@@ -95,13 +97,13 @@ void Tracking::superLoop( bool optionStoreTest) {
  * Algorithm adapted from the Newton-Raphson method.
  * based on the ex4_2 correction
  */
-dq_from_dUV_computation Tracking::algorithm1( int index) {
+dq_from_dUV_computation Tracking::algorithm1( int index, bool velocity) {
 
         // Initialization of the return variable
         dq_from_dUV_computation results;
         results.iterations = 0;
 
-        rw::math::Q currentQ = q;
+        rw::math::Q currentQ = device->getQ( state);
         rw::math::Q currentdQ;
 
         double maxError = 0;
@@ -109,12 +111,13 @@ dq_from_dUV_computation Tracking::algorithm1( int index) {
         // get the velocity limits
         rw::math::Q qVelocityLimit = device->getVelocityLimits();
 
-        // Comute du and dv
+        // Comute du and dvobot
+        //device->setQ( qInit, state);
         rw::math::Vector2D<double> currentDUV = get_du_dv( index);
 
         const double epsilon = 1; // precision of 1 pixel
 
-        // Loop until the precision is lower 1 pixel
+        // Loop until the precision is lower than 1 pixel
         while( currentDUV.norm2() > epsilon) {
 
                 // Get Zimage from the equation following the (eq.4.34)
@@ -131,10 +134,13 @@ dq_from_dUV_computation Tracking::algorithm1( int index) {
                 }
 
                 bool reachable = true;
-                for (unsigned w=0; w<q.size(); w++) {
-                        if( currentdQ[w] / deltaT > qVelocityLimit[w]) {
-                                reachable = false;
-                                break;
+
+                if( velocity) {
+                        for (unsigned w=0; w<q.size(); w++) {
+                                if( currentdQ[w] / deltaT > qVelocityLimit[w]) {
+                                        reachable = false;
+                                        break;
+                                }
                         }
                 }
 
@@ -143,8 +149,8 @@ dq_from_dUV_computation Tracking::algorithm1( int index) {
                         break;
                 }
 
-                if(results.iterations > 1) {
-                        results.dq.push_back( dq+results.dq[ results.iterations+1]);
+                if(results.iterations >= 1) {
+                        results.dq.push_back( dq+results.dq[ results.iterations-1]);
                 }else {
                         results.dq.push_back( dq);
                 }
@@ -265,10 +271,6 @@ rw::math::Jacobian Tracking::get_Jimage() {
  */
 rw::math::Vector2D<double> Tracking::get_du_dv(int index) {
 
-        rw::math::Transform3D<double> wTmarker = TransformMotions[index];
-
-        marker_frame->setTransform( wTmarker, state);
-
         // Get new Pos of the marker inside Fcam
         rw::math::Transform3D<double> markerTcam = cam_frame->fTf( marker_frame, state);
 
@@ -277,6 +279,86 @@ rw::math::Vector2D<double> Tracking::get_du_dv(int index) {
         rw::math::Vector2D<double> dUV( UVref(0)-UV(0), UVref(1)-UV(1));
 
         return dUV;
+}
+
+/* Update the marker position and rotation in the workcell using a
+ * motion.
+ */
+void Tracking::update_Marker( int index) {
+        rw::math::Transform3D<double> wTmarker = TransformMotions[index];
+
+        marker_frame->setTransform( wTmarker, state);
+}
+
+/* Set a Tracking object with the element of the Workcell wc.
+ */
+void Tracking::set( rw::models::WorkCell::Ptr wc) {
+
+        const std::string device_name = "PA10";
+
+        // Get device and check if it has been loaded correctly
+        device = wc->findDevice(device_name);
+        if(device == nullptr) {
+                RW_THROW("Device " << device_name << " was not found!");
+        }
+
+        // Find Camera
+        cam_frame = wc->findFrame("Camera");
+        if(cam_frame == nullptr) {
+                RW_THROW("Camera frame not found!");
+        }
+
+        state = wc->getDefaultState();
+
+        marker_frame = dynamic_cast<rw::kinematics::MovableFrame*>(wc->findFrame("Marker"));
+        if(marker_frame == nullptr) {
+                RW_THROW("Marker frame not found!");
+        }
+
+        qInit = device->getQ( state);
+        q = device->getQ( state);
+        deltaT = 1;
+        f = 823;
+        z = 0.5;
+}
+
+/* Like the superLoop function but used for the GUI.
+ */
+void Tracking::tick( int index, bool velocity) {
+
+        q = device->getQ(state);
+
+        dq_from_dUV_computation result = algorithm1( index, velocity);
+
+        if(result.dq.size()>0) {
+                q += result.dq[result.dq.size()-1];
+        }
+
+        // Update the robot
+        device->setQ( q, state);
+}
+
+/* Return a string with the informations about the algorithm ( index,
+ * ...)
+ */
+std::string Tracking::print( rw::models::WorkCell::Ptr wc, int index) {
+        char* str;
+        std::string toReturn = "Index : ";
+        std::sprintf(str,"%d",index);
+        toReturn.append( str);
+        toReturn.append("\nMarker : Rotation3D[");
+
+        /*for( int i=0; i<3; i++) {
+                for( int j=0; j<3; j++) {
+                        std::sprintf(str,"%f",wc->findFrame("Marker")->getTransform( state).R().getCol(i)[j]);
+                        toReturn.append(str);
+                        if( i!=2 and j!=2) {toReturn.append(",");}
+                }
+           }*/
+
+        toReturn.append("]");
+
+        return toReturn;
 }
 
 void Tracking::testError_from_deltaT() {

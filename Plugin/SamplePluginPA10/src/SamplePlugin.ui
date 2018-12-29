@@ -10,6 +10,12 @@
     <height>479</height>
    </rect>
   </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
   <property name="windowTitle">
    <string>DockWidget</string>
   </property>
@@ -21,72 +27,234 @@
        <enum>QLayout::SetMinimumSize</enum>
       </property>
       <item>
-       <widget class="QCheckBox" name="_checkBox_color">
+       <widget class="QRadioButton" name="radioButton_mode1">
         <property name="text">
-         <string>Marker : Color</string>
+         <string>Mode : Motions</string>
         </property>
         <property name="checked">
          <bool>true</bool>
         </property>
+        <property name="autoExclusive">
+         <bool>false</bool>
+        </property>
        </widget>
       </item>
       <item>
-       <widget class="QCheckBox" name="_checkBox_corny">
+       <widget class="QRadioButton" name="radioButton_mode2">
         <property name="text">
-         <string>Marker : Corny</string>
+         <string>Mode : Vision</string>
+        </property>
+        <property name="autoExclusive">
+         <bool>false</bool>
         </property>
        </widget>
       </item>
      </layout>
     </item>
     <item>
-     <widget class="QCheckBox" name="_checkBox">
-      <property name="text">
-       <string>Tracking with 3 points</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <layout class="QVBoxLayout" name="verticalLayout">
-      <property name="sizeConstraint">
-       <enum>QLayout::SetMinimumSize</enum>
-      </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_6">
       <item>
-       <layout class="QHBoxLayout" name="_2">
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <property name="sizeConstraint">
+         <enum>QLayout::SetNoConstraint</enum>
+        </property>
         <item>
-         <widget class="QPushButton" name="_btn1">
+         <widget class="QRadioButton" name="rb_m1_Slow">
           <property name="text">
-           <string>Play</string>
+           <string>Slow</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="_btn0">
+         <widget class="QRadioButton" name="rb_m1_Medium">
           <property name="text">
-           <string>Update</string>
+           <string>Medium</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QRadioButton" name="rb_m1_Fast">
+          <property name="text">
+           <string>Fast</string>
           </property>
          </widget>
         </item>
        </layout>
       </item>
       <item>
-       <widget class="QSpinBox" name="_spinBox"/>
-      </item>
-      <item>
-       <widget class="QSlider" name="_slider">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <property name="sizeConstraint">
+         <enum>QLayout::SetNoConstraint</enum>
         </property>
-       </widget>
+        <item>
+         <widget class="QRadioButton" name="rb_m2_Color">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string>Marker Color</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QRadioButton" name="rb_m2_Corny">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string>Marker Corny</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <property name="sizeConstraint">
+       <enum>QLayout::SetMinimumSize</enum>
+      </property>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <item>
+         <widget class="QSpinBox" name="spinBox_deltaT">
+          <property name="suffix">
+           <string> ms</string>
+          </property>
+          <property name="maximum">
+           <number>1000</number>
+          </property>
+          <property name="singleStep">
+           <number>50</number>
+          </property>
+          <property name="value">
+           <number>1000</number>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>delta t</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
       <item>
-       <widget class="QLabel" name="_label">
+       <widget class="QCheckBox" name="checkBox_m2_openCV">
         <property name="text">
-         <string>Label</string>
+         <string>openCV informations</string>
         </property>
        </widget>
       </item>
      </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_5">
+      <property name="sizeConstraint">
+       <enum>QLayout::SetDefaultConstraint</enum>
+      </property>
+      <item>
+       <widget class="QPushButton" name="pushButton_Load">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>LOAD</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_Play">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>PLAY / STOP</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_Break">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>BREAK</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QLabel" name="_label">
+      <property name="text">
+       <string>TextLabel</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignHCenter|Qt::AlignTop</set>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QLabel" name="label_mode">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_state">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QLabel" name="label_log">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>

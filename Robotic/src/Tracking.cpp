@@ -1,4 +1,4 @@
-#include "Tracking.h"
+#include "Tracking.hpp"
 
 /* Open the file by the given path in parameter and extract the motions to use.
  * The motions will be print on the screen iteratively.
@@ -64,6 +64,8 @@ void Tracking::superLoop( bool optionStoreTest) {
 
         q = device->getQ(state);
         for (unsigned int i=0; i<TransformMotions.size(); i++) {
+
+                update_Marker( i);
 
                 dq_from_dUV_computation result = algorithm1( i);
 
@@ -265,10 +267,6 @@ rw::math::Jacobian Tracking::get_Jimage() {
  */
 rw::math::Vector2D<double> Tracking::get_du_dv(int index) {
 
-        rw::math::Transform3D<double> wTmarker = TransformMotions[index];
-
-        marker_frame->setTransform( wTmarker, state);
-
         // Get new Pos of the marker inside Fcam
         rw::math::Transform3D<double> markerTcam = cam_frame->fTf( marker_frame, state);
 
@@ -277,6 +275,12 @@ rw::math::Vector2D<double> Tracking::get_du_dv(int index) {
         rw::math::Vector2D<double> dUV( UVref(0)-UV(0), UVref(1)-UV(1));
 
         return dUV;
+}
+
+void Tracking::update_Marker( int index) {
+        rw::math::Transform3D<double> wTmarker = TransformMotions[index];
+
+        marker_frame->setTransform( wTmarker, state);
 }
 
 void Tracking::testError_from_deltaT() {

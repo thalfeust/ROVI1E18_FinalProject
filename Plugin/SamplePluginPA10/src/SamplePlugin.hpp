@@ -37,6 +37,8 @@ virtual void close();
 
 virtual void initialize();
 
+void grabPicture();
+
 private slots:
 void btnPressed();
 void timer();

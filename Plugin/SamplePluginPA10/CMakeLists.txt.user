@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 4.5.2, 2018-12-09T12:59:46. -->
+<!-- Written by QtCreator 4.5.2, 2018-12-29T12:27:50. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -61,7 +61,7 @@
   <valuemap type="QVariantMap">
    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">Imported Kit</value>
    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">Imported Kit</value>
-   <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">{b9a73453-0abb-4394-a912-fa1013992d71}</value>
+   <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">{af7f705a-aaf8-4d89-affa-e0e39794ef0d}</value>
    <value type="int" key="ProjectExplorer.Target.ActiveBuildConfiguration">0</value>
    <value type="int" key="ProjectExplorer.Target.ActiveDeployConfiguration">0</value>
    <value type="int" key="ProjectExplorer.Target.ActiveRunConfiguration">0</value>
@@ -88,7 +88,7 @@
      <valuemap type="QVariantMap" key="ProjectExplorer.BuildStepList.Step.0">
       <value type="QString" key="CMakeProjectManager.MakeStep.AdditionalArguments"></value>
       <valuelist type="QVariantList" key="CMakeProjectManager.MakeStep.BuildTargets">
-       <value type="QString">all</value>
+       <value type="QString">clean</value>
       </valuelist>
       <value type="bool" key="ProjectExplorer.BuildStep.Enabled">true</value>
       <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">CMake Build</value>
@@ -162,7 +162,7 @@
      <value type="int">13</value>
      <value type="int">14</value>
     </valuelist>
-    <value type="int" key="PE.EnvironmentAspect.Base">-1</value>
+    <value type="int" key="PE.EnvironmentAspect.Base">2</value>
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
     <value type="QString" key="ProjectExplorer.CustomExecutableRunConfiguration.Arguments"></value>
     <value type="QString" key="ProjectExplorer.CustomExecutableRunConfiguration.Executable"></value>

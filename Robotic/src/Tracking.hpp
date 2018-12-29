@@ -48,6 +48,7 @@ rw::math::Jacobian get_Zimage_1points();
 rw::math::Jacobian get_Sq();
 rw::math::Jacobian get_Jimage();
 rw::math::Vector2D<double> get_du_dv(int index);
+void update_Marker( int index);
 };
 
 #endif

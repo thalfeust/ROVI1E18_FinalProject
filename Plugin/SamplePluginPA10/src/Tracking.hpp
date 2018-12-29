@@ -43,11 +43,15 @@ float deltaT;
 void getTransformMotions( std::string path);
 void testError_from_deltaT();
 void superLoop( bool optionStoreTest);
-dq_from_dUV_computation algorithm1( int index);
+dq_from_dUV_computation algorithm1( int index, bool velocity);
 rw::math::Jacobian get_Zimage_1points();
 rw::math::Jacobian get_Sq();
 rw::math::Jacobian get_Jimage();
 rw::math::Vector2D<double> get_du_dv(int index);
+void update_Marker( int index);
+void set( rw::models::WorkCell::Ptr wc);
+void tick( int index, bool velocity);
+std::string print( rw::models::WorkCell::Ptr wc, int index);
 };
 
 #endif
