@@ -8,6 +8,7 @@
 #include <rw/kinematics/Frame.hpp>
 #include <rw/kinematics/MovableFrame.hpp>
 #include <rw/math.hpp>
+#include <rw/math/Vector.hpp>
 #include <string>
 #include <stdlib.h>
 
@@ -30,6 +31,9 @@ rw::math::Q q;
 rw::math::Q qInit;
 rw::math::Vector2D<double> UVref;
 // tracking 3 points
+rw::math::Vector3D<double> pt1;
+rw::math::Vector3D<double> pt2;
+rw::math::Vector3D<double> pt3;
 rw::math::Vector2D<double> UVref1;
 rw::math::Vector2D<double> UVref2;
 rw::math::Vector2D<double> UVref3;
@@ -42,15 +46,19 @@ float deltaT;
 
 void getTransformMotions( std::string path);
 void testError_from_deltaT();
-void superLoop( bool optionStoreTest);
-dq_from_dUV_computation algorithm1( int index, bool velocity);
-rw::math::Jacobian get_Zimage_1points();
+void superLoop( bool optionStoreTest, int pointNumber);
+dq_from_dUV_computation algorithm1_1point( int index, bool velocity);
+dq_from_dUV_computation algorithm1_3point( int index, bool velocity);
+rw::math::Jacobian get_Zimage( int pointNumber);
 rw::math::Jacobian get_Sq();
-rw::math::Jacobian get_Jimage();
-rw::math::Vector2D<double> get_du_dv(int index);
+rw::math::Jacobian get_Jimage( int pointNumber);
+rw::math::Vector2D<double> get_du_dv_1point(int index);
+rw::math::VelocityScrew6D <double> get_du_dv_3point(int index);
 void update_Marker( int index);
-void set( rw::models::WorkCell::Ptr wc);
-void tick( int index, bool velocity);
+void set( rw::models::WorkCell::Ptr wc, int mode);
+void set_1point( rw::models::WorkCell::Ptr wc);
+void set_3points( rw::models::WorkCell::Ptr wc);
+void tick( int index, bool velocity, int pointNumber);
 std::string print( rw::models::WorkCell::Ptr wc, int index);
 };
 

@@ -27,6 +27,7 @@ using namespace std::placeholders;
 // Global Variables
 Tracking tracker;
 int indexTimer = 0;
+bool mode1_1point = true;
 // Parameters
 std::string motionPath_Slow = "/home/student/Documents/ROVI1E18_FinalProject/Plugin/SamplePluginPA10/motions/MarkerMotionSlow.txt";
 std::string motionPath_Medium = "/home/student/Documents/ROVI1E18_FinalProject/Plugin/SamplePluginPA10/motions/MarkerMotionMedium.txt";
@@ -151,12 +152,16 @@ void SamplePlugin::btnPressed() {
                 rb_m1_Slow->setEnabled(true);
                 rb_m1_Medium->setEnabled(true);
                 rb_m1_Fast->setEnabled(true);
+                rb_1point->setEnabled(true);
+                rb_3point->setEnabled(true);
                 rb_m2_Color->setEnabled(false);
                 rb_m2_Corny->setEnabled(false);
         }else if( obj==radioButton_mode2) {
                 rb_m1_Slow->setEnabled(false);
                 rb_m1_Medium->setEnabled(false);
                 rb_m1_Fast->setEnabled(false);
+                rb_1point->setEnabled(false);
+                rb_3point->setEnabled(false);
                 rb_m2_Color->setEnabled(true);
                 rb_m2_Corny->setEnabled(true);
         }else if( obj==pushButton_Load) {
@@ -170,7 +175,6 @@ void SamplePlugin::btnPressed() {
                 _textureRender->setImage(*image);
                 image = ImageLoader::Factory::load("/home/student/Documents/ROVI1E18_FinalProject/Plugin/SamplePluginPA10/backgrounds/color1.ppm");
                 _bgRender->setImage(*image);
-                getRobWorkStudio()->updateAndRepaint();
 
                 if( radioButton_mode1->isChecked()) {
                         if( rb_m1_Slow->isChecked()) {
@@ -185,10 +189,25 @@ void SamplePlugin::btnPressed() {
                                 label_mode->setText( "Mode Motions : Fast");
                                 tracker.getTransformMotions( motionPath_Fast);
                         }
-                }
 
-                // Set the Tracking variables
-                tracker.set( _wc);
+                        if( rb_1point->isChecked()) {
+
+                                label_mode->setText( label_mode->text() + " 1 point");
+
+                                mode1_1point = true;
+
+                                // Set the Tracking variables
+                                tracker.set( _wc, 1);
+                        }else {
+
+                                label_mode->setText( label_mode->text() + " 3 points");
+
+                                mode1_1point = false;
+
+                                // Set the Tracking variables
+                                tracker.set( _wc, 3);
+                        }
+                }
 
                 // Update the robot
                 tracker.device->setQ( tracker.qInit, tracker.state);
@@ -249,13 +268,17 @@ void SamplePlugin::timer() {
                 // Update the maker frame
                 tracker.update_Marker( indexTimer);
 
-                tracker.tick( indexTimer, false);
+                if( mode1_1point) {
+                        tracker.tick( indexTimer, false, 1);
+                }else {
+                        tracker.tick( indexTimer, false, 3);
+                }
 
                 // Update the workcell
                 //getRobWorkStudio()->setWorkCell(_wc);
                 getRobWorkStudio()->setState( tracker.state);
                 getRobWorkStudio()->updateAndRepaint();
-                log().info() << "Index : " << indexTimer << "\nMarker : " << _wc->findFrame("Marker")->getTransform(tracker.state).R() << " " << _wc->findFrame("Marker")->getTransform(tracker.state).P() << "\n";
+                std::cout << "Index : " << indexTimer << "\nMarker : " << _wc->findFrame("Marker")->getTransform(tracker.state).R() << " " << _wc->findFrame("Marker")->getTransform(tracker.state).P() << "\n";
 
                 grabPicture();
 
