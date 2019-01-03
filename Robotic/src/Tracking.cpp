@@ -530,7 +530,7 @@ void Tracking::set_3points( rw::models::WorkCell::Ptr wc) {
 void Tracking::tick( int index, bool velocity, int pointNumber) {
 
         // Verification
-        if( pointNumber<1 and pointNumber>3 and pointNumber==2) {
+        if( pointNumber<1 or pointNumber>3 or pointNumber==2) {
                 RW_THROW("Error mode");
         }
 
