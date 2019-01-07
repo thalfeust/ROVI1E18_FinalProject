@@ -24,10 +24,6 @@ using namespace cv;
 
 using namespace std::placeholders;
 
-// Global Variables
-Tracking tracker;
-int indexTimer = 0;
-bool mode1_1point = true;
 // Parameters
 std::string motionPath_Slow = "/home/student/Documents/ROVI1E18_FinalProject/Plugin/SamplePluginPA10/motions/MarkerMotionSlow.txt";
 std::string motionPath_Medium = "/home/student/Documents/ROVI1E18_FinalProject/Plugin/SamplePluginPA10/motions/MarkerMotionMedium.txt";
@@ -140,7 +136,8 @@ void SamplePlugin::close() {
 }
 
 Mat SamplePlugin::toOpenCVImage(const Image& img) {
-        Mat res(img.getHeight(),img.getWidth(), CV_8SC3);
+        //Mat res(img.getHeight(),img.getWidth(), CV_8SC3);
+        Mat res(img.getHeight(),img.getWidth(), CV_8UC3);
         res.data = (uchar*)img.getImageData();
         return res;
 }
@@ -149,21 +146,16 @@ void SamplePlugin::btnPressed() {
         QObject *obj = sender();
 
         if( obj==radioButton_mode1) {
-                rb_m1_Slow->setEnabled(true);
-                rb_m1_Medium->setEnabled(true);
-                rb_m1_Fast->setEnabled(true);
                 rb_1point->setEnabled(true);
                 rb_3point->setEnabled(true);
                 rb_m2_Color->setEnabled(false);
                 rb_m2_Corny->setEnabled(false);
         }else if( obj==radioButton_mode2) {
-                rb_m1_Slow->setEnabled(false);
-                rb_m1_Medium->setEnabled(false);
-                rb_m1_Fast->setEnabled(false);
                 rb_1point->setEnabled(false);
                 rb_3point->setEnabled(false);
                 rb_m2_Color->setEnabled(true);
                 rb_m2_Corny->setEnabled(true);
+
         }else if( obj==pushButton_Load) {
                 log().info() << "Button Load\n";
 
@@ -171,12 +163,13 @@ void SamplePlugin::btnPressed() {
 
                 // Set a new texture (one pixel = 1 mm)
                 Image::Ptr image;
-                image = ImageLoader::Factory::load("/home/student/Documents/ROVI1E18_FinalProject/Plugin/SamplePluginPA10/markers/Marker1.ppm");
-                _textureRender->setImage(*image);
                 image = ImageLoader::Factory::load("/home/student/Documents/ROVI1E18_FinalProject/Plugin/SamplePluginPA10/backgrounds/color1.ppm");
                 _bgRender->setImage(*image);
 
+                //extraction_CS.plop();
+
                 if( radioButton_mode1->isChecked()) {
+
                         if( rb_m1_Slow->isChecked()) {
                                 label_mode->setText( "Mode Motions : Slow");
                                 label_state->setText( "[load]");
@@ -189,6 +182,8 @@ void SamplePlugin::btnPressed() {
                                 label_mode->setText( "Mode Motions : Fast");
                                 tracker.getTransformMotions( motionPath_Fast);
                         }
+
+                        mode1 = true;
 
                         if( rb_1point->isChecked()) {
 
@@ -207,15 +202,62 @@ void SamplePlugin::btnPressed() {
                                 // Set the Tracking variables
                                 tracker.set( _wc, 3);
                         }
+
+                        image = ImageLoader::Factory::load("/home/student/Documents/ROVI1E18_FinalProject/Plugin/SamplePluginPA10/markers/Marker1.ppm");
+                        _textureRender->setImage(*image);
+                        // Update the maker frame
+                        tracker.update_Marker( 0);
+
+                }else { // Vision mode
+
+                        // Set the Vision variables
+                        extraction_CS.set( 2000.0, 0.78, 5, 1, cv::Size(9, 9), cv::Scalar(0, 0, 0), cv::Scalar(30, 255, 255), cv::Scalar(70, 0, 0), cv::Scalar(180, 255, 255));
+                        //extraction_CS.set( 2000.0, 0.78, 5, 1, cv::Size(9, 9), cv::Scalar(0, 151, 0), cv::Scalar(010, 255, 255), cv::Scalar(90, 80, 10), cv::Scalar(180, 200, 150));
+                        extraction_CS.plop();
+
+                        mode1_1point = false;
+                        mode1 = false;
+
+                        // Set the Tracking variables
+                        tracker.set( _wc, 3);
+
+                        if( rb_m1_Slow->isChecked()) {
+                                label_mode->setText( "Mode Vision : Slow");
+                                label_state->setText( "[load]");
+                                tracker.getTransformMotions( motionPath_Slow);
+                        }else if( rb_m1_Medium->isChecked()) {
+                                label_mode->setText( "Mode Vision : Medium");
+                                label_state->setText( "[load]");
+                                tracker.getTransformMotions( motionPath_Medium);
+                        }else if( rb_m1_Fast->isChecked()) {
+                                label_mode->setText( "Mode Vision : Fast");
+                                tracker.getTransformMotions( motionPath_Fast);
+                        }
+
+                        if( rb_m2_Color->isChecked()) {
+                                label_mode->setText( label_mode->text() + " Color marker");
+                                label_state->setText( "[load]");
+
+                                image = ImageLoader::Factory::load("/home/student/Documents/ROVI1E18_FinalProject/Plugin/SamplePluginPA10/markers/Marker1.ppm");
+                                _textureRender->setImage(*image);
+
+                        }else if( rb_m2_Corny->isChecked()) {
+
+                                label_mode->setText( label_mode->text() + " Corny marker");
+                                label_state->setText( "[load]");
+
+                                image = ImageLoader::Factory::load("/home/student/Documents/ROVI1E18_FinalProject/Plugin/SamplePluginPA10/markers/Marker3.ppm");
+                                _textureRender->setImage(*image);
+                        }
+
+                        tracker.set( _wc, 3);
                 }
 
                 // Update the robot
                 tracker.device->setQ( tracker.qInit, tracker.state);
-                // Update the maker frame
-                tracker.update_Marker( 0);
                 getRobWorkStudio()->setState( tracker.state);
                 getRobWorkStudio()->updateAndRepaint();
-                grabPicture();
+                printPicture( grabPicture());
 
                 pushButton_Play->setEnabled(true);
                 pushButton_Play->setStyleSheet("background-color: green");
@@ -268,10 +310,20 @@ void SamplePlugin::timer() {
                 // Update the maker frame
                 tracker.update_Marker( indexTimer);
 
-                if( mode1_1point) {
-                        tracker.tick( indexTimer, false, 1);
+                if( mode1) {
+                        if( mode1_1point) {
+                                tracker.tick( indexTimer, false, 1);
+                        }else {
+                                tracker.tick( indexTimer, false, 3);
+                        }
                 }else {
-                        tracker.tick( indexTimer, false, 3);
+                        std::cout << "Mode 2\n";
+                        cv::Mat img = grabPicture();
+                        std::cout << "Grabed\n";
+                        std::vector<cv::Point> center;
+                        cv::Mat toPrint = extraction_CS.tick( &img, center);
+                        std::cout << "Vision did";
+                        printPicture( toPrint);
                 }
 
                 // Update the workcell
@@ -280,7 +332,9 @@ void SamplePlugin::timer() {
                 getRobWorkStudio()->updateAndRepaint();
                 std::cout << "Index : " << indexTimer << "\nMarker : " << _wc->findFrame("Marker")->getTransform(tracker.state).R() << " " << _wc->findFrame("Marker")->getTransform(tracker.state).P() << "\n";
 
-                grabPicture();
+                if( mode1) {
+                        printPicture( grabPicture());
+                }
 
                 indexTimer++;
                 if ( indexTimer>=tracker.TransformMotions.size()) {
@@ -289,7 +343,7 @@ void SamplePlugin::timer() {
         }
 }
 
-void SamplePlugin::grabPicture() {
+cv::Mat SamplePlugin::grabPicture() {
         // Get the image as a RW image
         Frame* cameraFrame = _wc->findFrame("CameraSim");
         _framegrabber->grab(cameraFrame, _state);
@@ -300,9 +354,13 @@ void SamplePlugin::grabPicture() {
         Mat imflip;
         cv::flip(im, imflip, 0);
 
+        return imflip;
+}
+
+void SamplePlugin::printPicture( cv::Mat img) {
         // Show in QLabel
-        QImage img(imflip.data, imflip.cols, imflip.rows, imflip.step, QImage::Format_RGB888);
-        QPixmap p = QPixmap::fromImage(img);
+        QImage img_out(img.data, img.cols, img.rows, img.step, QImage::Format_RGB888);
+        QPixmap p = QPixmap::fromImage(img_out);
         //unsigned int maxW = 400;
         //unsigned int maxH = 800;
         unsigned int maxW = 350;

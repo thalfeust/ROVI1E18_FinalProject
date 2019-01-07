@@ -11,9 +11,6 @@
 #include <RobWorkStudioConfig.hpp> // For RWS_USE_QT5 definition
 #include <rws/RobWorkStudioPlugin.hpp>
 
-// OpenCV 3
-#include <opencv2/opencv.hpp>
-
 // Qt
 #include <QTimer>
 
@@ -21,6 +18,7 @@
 
 // Project class
 #include "Tracking.hpp"
+#include "FeatureExtraction.hpp"
 
 class SamplePlugin : public rws::RobWorkStudioPlugin, private Ui::SamplePlugin
 {
@@ -37,7 +35,8 @@ virtual void close();
 
 virtual void initialize();
 
-void grabPicture();
+cv::Mat grabPicture();
+void printPicture( cv::Mat img);
 
 private slots:
 void btnPressed();
@@ -54,6 +53,15 @@ rw::models::WorkCell::Ptr _wc;
 rw::kinematics::State _state;
 rwlibs::opengl::RenderImage *_textureRender, *_bgRender;
 rwlibs::simulation::GLFrameGrabber* _framegrabber;
+
+// Global Variables
+Tracking tracker;
+int indexTimer = 0;
+bool mode1 = true;
+bool mode1_1point = true;
+bool mode2_color = true;
+
+ColorSegmentation extraction_CS;
 };
 
 #endif /*RINGONHOOKPLUGIN_HPP_*/

@@ -27,7 +27,7 @@ void Tracking::getTransformMotions( std::string path) {
                                 tokens.push_back( token);
                         }
 
-                        // Creaion of P and R from T by the syntax X Y Z Roll Pitch Yaw
+                        // Creation of P and R from T by the syntax X Y Z Roll Pitch Yaw
                         rw::math::Vector3D<double> P( atof(tokens[0].c_str()), atof(tokens[1].c_str()), atof(tokens[2].c_str()));
                         rw::math::RPY<double> R( atof(tokens[3].c_str()), atof(tokens[4].c_str()), atof(tokens[5].c_str()));
 

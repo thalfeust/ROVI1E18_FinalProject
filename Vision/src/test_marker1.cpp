@@ -47,7 +47,8 @@ int main(int argc, char* argv[])
 								folder += "*.png";
 
 								FeaturesDections features;
-								ColorSegmentation extraction_CS( 2000.0, 0.78, dilation_size, erosion_size, cv::Size(9, 9), cv::Scalar(0, 151, 0), cv::Scalar(010, 255, 255), cv::Scalar(90, 80, 10), cv::Scalar(180, 200, 150));
+								ColorSegmentation extraction_CS;
+								extraction_CS.set( 2000.0, 0.78, dilation_size, erosion_size, cv::Size(9, 9), cv::Scalar(0, 151, 0), cv::Scalar(010, 255, 255), cv::Scalar(90, 80, 10), cv::Scalar(180, 200, 150));
 
 								cv::namedWindow(folder, cv::WINDOW_NORMAL);
 
@@ -70,7 +71,7 @@ int main(int argc, char* argv[])
 
 																// Output
 																matArrayOutputLine1[0] = img;
-
+																//extraction_CS.tick( &img);
 																// Isolate Circles by color---------------------
 
 																cv::Mat red_hsv_range = extraction_CS.segmentation( img, "red");

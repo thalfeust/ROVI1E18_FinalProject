@@ -120,7 +120,7 @@ cv::Mat ColorSegmentation::gaussianBlur( const cv::Mat& src) {
 }
 
 cv::Mat ColorSegmentation::segmentation(
-        const cv::Mat& src, std::string mode) {
+        const cv::Mat src, std::string mode) {
 
         if( mode.compare("blue")!=0 && mode.compare("red")!=0) {
                 throw std::exception();
@@ -129,6 +129,8 @@ cv::Mat ColorSegmentation::segmentation(
         // Convert input image to HSV [DOC-3]
         cv::Mat hsv_image;
         cv::cvtColor(src, hsv_image, cv::COLOR_BGR2HSV);
+
+        std::cout << "Colored\n";
 
         cv::Mat toReturn;
 
@@ -234,32 +236,39 @@ std::vector<cv::Point> ColorSegmentation::algoFind3Points(
         return toReturn;
 }
 
-std::vector<cv::Point> ColorSegmentation::tick( cv::Mat* img) {
+cv::Mat ColorSegmentation::tick( cv::Mat* img, std::vector<cv::Point> center) {
+
+        std::cout << "Tick\n";
 
         // Isolate Circles by color
         cv::Mat red_hsv_range = segmentation( (*img), "red");
         cv::Mat blue_hsv_range = segmentation( (*img), "blue");
 
+        std::cout << "Isolation\n";
+
         // Dilate to get rid of isoled pixels and some noise
         red_hsv_range = dilate( red_hsv_range);
         blue_hsv_range = dilate( blue_hsv_range);
+
+        std::cout << "Dilation\n";
 
         // Erode
         red_hsv_range = erode( red_hsv_range);
         blue_hsv_range = erode( blue_hsv_range);
 
+        std::cout << "Erode\n";
+
         // Blur image
         red_hsv_range = gaussianBlur( red_hsv_range);
         blue_hsv_range = gaussianBlur( blue_hsv_range);
 
-        // Storage of the centers
-        std::vector<cv::Point> center;
+        std::cout << "Blur\n";
 
         // Find the red circle
-        cv::Mat redCircle = FindCircles( red_hsv_range, center, true);
+        cv::Mat redCircle = FindCircles( red_hsv_range, center, false);
 
         // Find blue circle
-        cv::Mat blueCircle = FindCircles( blue_hsv_range, center, true);
+        cv::Mat blueCircle = FindCircles( blue_hsv_range, center, false);
 
         std::cout << "Number of centers : " << center.size() << std::endl;
 
@@ -269,11 +278,12 @@ std::vector<cv::Point> ColorSegmentation::tick( cv::Mat* img) {
                 std::cout << " Key : " << keypoints[0] <<" "<< keypoints[1] << "\n";
 
                 if( keypoints.size()>=3) {
-                        (*img) = drawResult( (*img), keypoints);
+                        cv::Mat toReturn = drawResult( (*img), keypoints);
+                        return toReturn;
                 }
         }
 
-        return center;
+        return (*img);
 }
 
 PointsFeatures::PointsFeatures( int detector, cv::Mat img) {
