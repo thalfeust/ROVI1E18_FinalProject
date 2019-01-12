@@ -132,7 +132,7 @@ dq_from_dUV_computation Tracking::algorithm1_1point( int index, bool velocity) {
         results.iterations = 0;
 
         rw::math::Q currentQ = device->getQ( state);
-        rw::math::Q currentdQ;
+        rw::math::Q storagedQ;
 
         double maxError = 0;
 
@@ -157,16 +157,16 @@ dq_from_dUV_computation Tracking::algorithm1_1point( int index, bool velocity) {
 
                 // Update the result of the function
                 if(results.iterations > 1) {
-                        currentdQ += dq;
+                        storagedQ += dq;
                 }else {
-                        currentdQ = dq;
+                        storagedQ = dq;
                 }
 
                 bool reachable = true;
 
                 if( velocity) {
                         for (unsigned w=0; w<q.size(); w++) {
-                                if( currentdQ[w] / deltaT > qVelocityLimit[w]) {
+                                if( storagedQ[w] / deltaT > qVelocityLimit[w]) {
                                         reachable = false;
                                         break;
                                 }
@@ -178,11 +178,9 @@ dq_from_dUV_computation Tracking::algorithm1_1point( int index, bool velocity) {
                         break;
                 }
 
-                if(results.iterations >= 1) {
-                        results.dq.push_back( dq+results.dq[ results.iterations-1]);
-                }else {
-                        results.dq.push_back( dq);
-                }
+
+                results.dq.push_back( storagedQ);
+
                 results.iterations++;
 
                 // Update the state of the joints
@@ -215,7 +213,7 @@ dq_from_dUV_computation Tracking::algorithm1_3point( bool velocity, bool fromVis
         results.iterations = 0;
 
         rw::math::Q currentQ = device->getQ( state);
-        rw::math::Q currentdQ;
+        rw::math::Q storagedQ;
 
         double maxError = 0;
 
@@ -241,16 +239,16 @@ dq_from_dUV_computation Tracking::algorithm1_3point( bool velocity, bool fromVis
 
                 // Update the result of the function
                 if(results.iterations > 1) {
-                        currentdQ += dq;
+                        storagedQ += dq;
                 }else {
-                        currentdQ = dq;
+                        storagedQ = dq;
                 }
 
                 bool reachable = true;
 
                 if( velocity) {
                         for (unsigned w=0; w<q.size(); w++) {
-                                if( currentdQ[w] / deltaT > qVelocityLimit[w]) {
+                                if( storagedQ[w] / deltaT > qVelocityLimit[w]) {
                                         reachable = false;
                                         break;
                                 }
@@ -262,11 +260,8 @@ dq_from_dUV_computation Tracking::algorithm1_3point( bool velocity, bool fromVis
                         break;
                 }
 
-                if(results.iterations >= 1) {
-                        results.dq.push_back( dq+results.dq[ results.iterations-1]);
-                }else {
-                        results.dq.push_back( dq);
-                }
+                results.dq.push_back( storagedQ);
+
                 results.iterations++;
 
                 // Update the state of the joints
@@ -614,7 +609,7 @@ bool Tracking::tickFromVision( int index, bool velocity, int pointNumber, bool f
         results.iterations = 0;
 
         rw::math::Q currentQ = device->getQ( state);
-        rw::math::Q currentdQ;
+        rw::math::Q storagedQ;
 
         double maxError = 0;
 

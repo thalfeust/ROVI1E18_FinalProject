@@ -117,7 +117,7 @@ font: 13pt &quot;Ubuntu&quot;;</string>
          </sizepolicy>
         </property>
         <property name="styleSheet">
-         <string notr="true">background-color: rgb(197, 224, 255);
+         <string notr="true">background-color: rgb(186, 189, 182);
 border-color: rgb(0, 0, 0);</string>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout">
@@ -167,13 +167,10 @@ border-color: rgb(0, 0, 0);</string>
              <number>0</number>
             </property>
             <item>
-             <widget class="QRadioButton" name="rb_3point">
+             <widget class="QLabel" name="label_3">
               <property name="text">
-               <string>3 points</string>
+               <string>Number of points :</string>
               </property>
-              <attribute name="buttonGroup">
-               <string notr="true">buttonGroup</string>
-              </attribute>
              </widget>
             </item>
             <item>
@@ -189,43 +186,17 @@ border-color: rgb(0, 0, 0);</string>
               </attribute>
              </widget>
             </item>
+            <item>
+             <widget class="QRadioButton" name="rb_3point">
+              <property name="text">
+               <string>3 points</string>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">buttonGroup</string>
+              </attribute>
+             </widget>
+            </item>
            </layout>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
-      <item>
-       <widget class="QWidget" name="widget" native="true">
-        <property name="styleSheet">
-         <string notr="true">background-color: rgb(255, 174, 174);
-</string>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout_3">
-         <property name="sizeConstraint">
-          <enum>QLayout::SetNoConstraint</enum>
-         </property>
-         <item>
-          <widget class="QRadioButton" name="rb_m2_Color">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="text">
-            <string>Marker Color</string>
-           </property>
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QRadioButton" name="rb_m2_Corny">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="text">
-            <string>Marker Corny</string>
-           </property>
           </widget>
          </item>
         </layout>
@@ -267,13 +238,6 @@ border-color: rgb(0, 0, 0);</string>
           </widget>
          </item>
          <item>
-          <widget class="QRadioButton" name="rb_m1_Fast">
-           <property name="text">
-            <string>Fast</string>
-           </property>
-          </widget>
-         </item>
-         <item>
           <widget class="QRadioButton" name="rb_m1_Slow">
            <property name="text">
             <string>Slow</string>
@@ -287,6 +251,13 @@ border-color: rgb(0, 0, 0);</string>
           <widget class="QRadioButton" name="rb_m1_Medium">
            <property name="text">
             <string>Medium</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="rb_m1_Fast">
+           <property name="text">
+            <string>Fast</string>
            </property>
           </widget>
          </item>
@@ -330,7 +301,7 @@ border-color: rgb(0, 0, 0);</string>
             <number>50</number>
            </property>
            <property name="value">
-            <number>1000</number>
+            <number>100</number>
            </property>
           </widget>
          </item>
@@ -473,7 +444,7 @@ border-color: rgb(0, 0, 0);</string>
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup"/>
   <buttongroup name="buttonGroup_2"/>
+  <buttongroup name="buttonGroup"/>
  </buttongroups>
 </ui>

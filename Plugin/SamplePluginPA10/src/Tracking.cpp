@@ -53,7 +53,7 @@ void Tracking::getTransformMotions( std::string path) {
 /* Compute new Q for each motions of the marker using the pinhole model and the
  * inverse Kinematics.
  */
-void Tracking::superLoop( bool optionStoreTest, int pointNumber) {
+void Tracking::superLoop( bool optionStoreTest, int pointNumber, int printOutputMode) {
 
         // Verification
         if( pointNumber<1 and pointNumber>3 and pointNumber==2) {
@@ -65,6 +65,7 @@ void Tracking::superLoop( bool optionStoreTest, int pointNumber) {
 
         // For each steps the new q is store
         rw::math::Q qStorage[TransformMotions.size()];
+        rw::math::Transform3D<double> toolStorage[TransformMotions.size()];
         int accessible[TransformMotions.size()]; // 0 : impossible, 1 : not reachable, 2 : yes
 
         q = device->getQ(state);
@@ -83,23 +84,40 @@ void Tracking::superLoop( bool optionStoreTest, int pointNumber) {
                         q += result.dq[result.dq.size()-1];
                 }
 
-                // Update the storages;
-                qStorage[i] = q;
-
                 // Update the workcell
                 device->setQ( q, state);
+
+                // Update the storages;
+                qStorage[i] = q;
+                toolStorage[i] = tool_frame->wTf(state);
 
                 if( optionStoreTest) {
                         errorDUV.push_back( result.maxError);
                 }
 
         }
-        if( !optionStoreTest) {
-                // Print the results
+        if( printOutputMode == 1) {
+                // Print Q
                 std::cout << "\n\n\nQ results : " << std::endl;
+                std::cout << "[";
                 for (unsigned int i=0; i<TransformMotions.size(); i++) {
-                        std::cout << i << " : " << qStorage[i] << "\nCam : " << cam_frame->wTf(state) << std::endl;
+                        std::cout << qStorage[i];
+                        if( i<TransformMotions.size()-1) {
+                                std::cout << ";";
+                        }
                 }
+                std::cout << "]";
+        }else if( printOutputMode == 2) {
+                // Print Fcam
+                std::cout << "\n\n\nQ results : " << std::endl;
+                std::cout << "[";
+                for (unsigned int i=0; i<TransformMotions.size(); i++) {
+                        std::cout << toolStorage[i].P();
+                        if( i<TransformMotions.size()-1) {
+                                std::cout << ";";
+                        }
+                }
+                std::cout << "]";
         }
 }
 
@@ -114,7 +132,7 @@ dq_from_dUV_computation Tracking::algorithm1_1point( int index, bool velocity) {
         results.iterations = 0;
 
         rw::math::Q currentQ = device->getQ( state);
-        rw::math::Q currentdQ;
+        rw::math::Q storagedQ;
 
         double maxError = 0;
 
@@ -139,16 +157,16 @@ dq_from_dUV_computation Tracking::algorithm1_1point( int index, bool velocity) {
 
                 // Update the result of the function
                 if(results.iterations > 1) {
-                        currentdQ += dq;
+                        storagedQ += dq;
                 }else {
-                        currentdQ = dq;
+                        storagedQ = dq;
                 }
 
                 bool reachable = true;
 
                 if( velocity) {
                         for (unsigned w=0; w<q.size(); w++) {
-                                if( currentdQ[w] / deltaT > qVelocityLimit[w]) {
+                                if( storagedQ[w] / deltaT > qVelocityLimit[w]) {
                                         reachable = false;
                                         break;
                                 }
@@ -160,11 +178,9 @@ dq_from_dUV_computation Tracking::algorithm1_1point( int index, bool velocity) {
                         break;
                 }
 
-                if(results.iterations >= 1) {
-                        results.dq.push_back( dq+results.dq[ results.iterations-1]);
-                }else {
-                        results.dq.push_back( dq);
-                }
+
+                results.dq.push_back( storagedQ);
+
                 results.iterations++;
 
                 // Update the state of the joints
@@ -197,7 +213,7 @@ dq_from_dUV_computation Tracking::algorithm1_3point( bool velocity, bool fromVis
         results.iterations = 0;
 
         rw::math::Q currentQ = device->getQ( state);
-        rw::math::Q currentdQ;
+        rw::math::Q storagedQ;
 
         double maxError = 0;
 
@@ -223,16 +239,16 @@ dq_from_dUV_computation Tracking::algorithm1_3point( bool velocity, bool fromVis
 
                 // Update the result of the function
                 if(results.iterations > 1) {
-                        currentdQ += dq;
+                        storagedQ += dq;
                 }else {
-                        currentdQ = dq;
+                        storagedQ = dq;
                 }
 
                 bool reachable = true;
 
                 if( velocity) {
                         for (unsigned w=0; w<q.size(); w++) {
-                                if( currentdQ[w] / deltaT > qVelocityLimit[w]) {
+                                if( storagedQ[w] / deltaT > qVelocityLimit[w]) {
                                         reachable = false;
                                         break;
                                 }
@@ -244,11 +260,9 @@ dq_from_dUV_computation Tracking::algorithm1_3point( bool velocity, bool fromVis
                         break;
                 }
 
-                if(results.iterations >= 1) {
-                        results.dq.push_back( dq+results.dq[ results.iterations-1]);
-                }else {
-                        results.dq.push_back( dq);
-                }
+
+                results.dq.push_back( storagedQ);
+
                 results.iterations++;
 
                 // Update the state of the joints
@@ -481,6 +495,11 @@ void Tracking::set( rw::models::WorkCell::Ptr wc, int mode) {
                 RW_THROW("Camera frame not found!");
         }
 
+        tool_frame = wc->findFrame("Tool");
+        if(tool_frame == nullptr) {
+                RW_THROW("Tool frame not found!");
+        }
+
         state = wc->getDefaultState();
 
         marker_frame = dynamic_cast<rw::kinematics::MovableFrame*>(wc->findFrame("Marker"));
@@ -591,7 +610,7 @@ bool Tracking::tickFromVision( int index, bool velocity, int pointNumber, bool f
         results.iterations = 0;
 
         rw::math::Q currentQ = device->getQ( state);
-        rw::math::Q currentdQ;
+        rw::math::Q storagedQ;
 
         double maxError = 0;
 
@@ -660,7 +679,7 @@ void Tracking::testError_from_deltaT() {
                 deltaT = i;
                 errorDUV.clear();
 
-                superLoop( true, 1);
+                superLoop( true, 1, 0);
                 //std::cout << deltaT << " : [";
                 std::cout << "[";
                 for( int j=0; j<errorDUV.size(); j++) {

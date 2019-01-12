@@ -148,13 +148,9 @@ void SamplePlugin::btnPressed() {
         if( obj==radioButton_mode1) {
                 rb_1point->setEnabled(true);
                 rb_3point->setEnabled(true);
-                rb_m2_Color->setEnabled(false);
-                rb_m2_Corny->setEnabled(false);
         }else if( obj==radioButton_mode2) {
                 rb_1point->setEnabled(false);
                 rb_3point->setEnabled(false);
-                rb_m2_Color->setEnabled(true);
-                rb_m2_Corny->setEnabled(true);
 
         }else if( obj==pushButton_Load) {
                 log().info() << "Button Load\n";
@@ -234,21 +230,11 @@ void SamplePlugin::btnPressed() {
                                 tracker.getTransformMotions( motionPath_Fast);
                         }
 
-                        if( rb_m2_Color->isChecked()) {
-                                label_mode->setText( label_mode->text() + " Color marker");
-                                label_state->setText( "[load]");
+                        label_mode->setText( label_mode->text() + " Color marker");
+                        label_state->setText( "[load]");
 
-                                image = ImageLoader::Factory::load("/home/student/Documents/ROVI1E18_FinalProject/Plugin/SamplePluginPA10/markers/Marker1.ppm");
-                                _textureRender->setImage(*image);
-
-                        }else if( rb_m2_Corny->isChecked()) {
-
-                                label_mode->setText( label_mode->text() + " Corny marker");
-                                label_state->setText( "[load]");
-
-                                image = ImageLoader::Factory::load("/home/student/Documents/ROVI1E18_FinalProject/Plugin/SamplePluginPA10/markers/Marker3.ppm");
-                                _textureRender->setImage(*image);
-                        }
+                        image = ImageLoader::Factory::load("/home/student/Documents/ROVI1E18_FinalProject/Plugin/SamplePluginPA10/markers/Marker1.ppm");
+                        _textureRender->setImage(*image);
 
                         tracker.set( _wc, 3);
                 }
@@ -292,7 +278,7 @@ void SamplePlugin::btnPressed() {
                         indexTimer=0;
                         pushButton_Load->setEnabled(false);
                         pushButton_Break->setEnabled(true);
-                        _timer->start(100); // run 10 Hz
+                        _timer->start( spinBox_deltaT->value());
                         pushButton_Play->setStyleSheet("background-color: red");
                         pushButton_Break->setStyleSheet("background-color: red");
                         label_state->setText( "[running...]");
@@ -312,7 +298,7 @@ void SamplePlugin::btnPressed() {
                 if (!_timer->isActive()) {
                         pushButton_Break->setStyleSheet("background-color: red");
                         label_state->setText( "[running...]");
-                        _timer->start(100); // run 10 Hz
+                        _timer->start( spinBox_deltaT->value());
                 }else {
                         pushButton_Break->setStyleSheet("background-color: green");
                         label_state->setText( "[break...]");
