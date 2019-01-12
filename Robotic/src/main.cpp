@@ -10,7 +10,9 @@ using namespace std;
 
 int main( int argc, char *argv[]) {
 
-        std::string motions_path = "";
+        std::string motions_path = "../../Plugin/SamplePluginPA10/motions/MarkerMotionSlow.txt";
+        int pointNumber = 1;
+        int printOutputMode = 0;
         if( argc>1) {
                 if( strcmp( argv[1], "Slow")==0) {
                         motions_path = "../../Plugin/SamplePluginPA10/motions/MarkerMotionSlow.txt";
@@ -18,14 +20,24 @@ int main( int argc, char *argv[]) {
                         motions_path = "../../Plugin/SamplePluginPA10/motions/MarkerMotionMedium.txt";
                 }else if( strcmp( argv[1], "Fast")==0) {
                         motions_path = "../../Plugin/SamplePluginPA10/motions/MarkerMotionFast.txt";
-                }else {
-                        motions_path = "../../Plugin/SamplePluginPA10/motions/MarkerMotionSlow.txt";
                 }
-        }else {
-                motions_path = "../../Plugin/SamplePluginPA10/motions/MarkerMotionSlow.txt";
-        }
 
-        int pointNumber = 3;
+                if( argc>2) {
+                        if( strcmp( argv[2], "1")==0) {
+                                pointNumber = 1;
+                        }else if( strcmp( argv[2], "3")==0) {
+                                pointNumber = 3;
+                        }
+
+                        if( argc>3) {
+                                if( strcmp( argv[3], "Q")==0) {
+                                        printOutputMode = 1;
+                                }else if( strcmp( argv[3], "tool")==0) {
+                                        printOutputMode = 2;
+                                }
+                        }
+                }
+        }
 
         std::cout << "File path : " << motions_path << "\nPress a key + enter to continu ..." << std::endl;
         char tamp;
@@ -61,7 +73,7 @@ int main( int argc, char *argv[]) {
                 std::cin >> tamp;
         }
 
-        tracker.superLoop( false, pointNumber);
+        tracker.superLoop( false, pointNumber, printOutputMode);
         //tracker.testError_from_deltaT();
 
         std::cout << "END" << std::endl;

@@ -27,7 +27,7 @@ void Tracking::getTransformMotions( std::string path) {
                                 tokens.push_back( token);
                         }
 
-                        // Creaion of P and R from T by the syntax X Y Z Roll Pitch Yaw
+                        // Creation of P and R from T by the syntax X Y Z Roll Pitch Yaw
                         rw::math::Vector3D<double> P( atof(tokens[0].c_str()), atof(tokens[1].c_str()), atof(tokens[2].c_str()));
                         rw::math::RPY<double> R( atof(tokens[3].c_str()), atof(tokens[4].c_str()), atof(tokens[5].c_str()));
 
@@ -53,7 +53,7 @@ void Tracking::getTransformMotions( std::string path) {
 /* Compute new Q for each motions of the marker using the pinhole model and the
  * inverse Kinematics.
  */
-void Tracking::superLoop( bool optionStoreTest, int pointNumber) {
+void Tracking::superLoop( bool optionStoreTest, int pointNumber, int printOutputMode) {
 
         // Verification
         if( pointNumber<1 and pointNumber>3 and pointNumber==2) {
@@ -65,6 +65,7 @@ void Tracking::superLoop( bool optionStoreTest, int pointNumber) {
 
         // For each steps the new q is store
         rw::math::Q qStorage[TransformMotions.size()];
+        rw::math::Transform3D<double> toolStorage[TransformMotions.size()];
         int accessible[TransformMotions.size()]; // 0 : impossible, 1 : not reachable, 2 : yes
 
         q = device->getQ(state);
@@ -76,30 +77,47 @@ void Tracking::superLoop( bool optionStoreTest, int pointNumber) {
                 if( pointNumber==1) {
                         result = algorithm1_1point( i, true);
                 }else {
-                        result = algorithm1_3point( i, true);
+                        result = algorithm1_3point( true, false);
                 }
 
                 if(result.dq.size()>0) {
                         q += result.dq[result.dq.size()-1];
                 }
 
-                // Update the storages;
-                qStorage[i] = q;
-
                 // Update the workcell
                 device->setQ( q, state);
+
+                // Update the storages;
+                qStorage[i] = q;
+                toolStorage[i] = tool_frame->wTf(state);
 
                 if( optionStoreTest) {
                         errorDUV.push_back( result.maxError);
                 }
 
         }
-        if( !optionStoreTest) {
-                // Print the results
+        if( printOutputMode == 1) {
+                // Print Q
                 std::cout << "\n\n\nQ results : " << std::endl;
+                std::cout << "[";
                 for (unsigned int i=0; i<TransformMotions.size(); i++) {
-                        std::cout << i << " : " << qStorage[i] << "\nCam : " << cam_frame->wTf(state) << std::endl;
+                        std::cout << qStorage[i];
+                        if( i<TransformMotions.size()-1) {
+                                std::cout << ";";
+                        }
                 }
+                std::cout << "]";
+        }else if( printOutputMode == 2) {
+                // Print Fcam
+                std::cout << "\n\n\nQ results : " << std::endl;
+                std::cout << "[";
+                for (unsigned int i=0; i<TransformMotions.size(); i++) {
+                        std::cout << toolStorage[i].P();
+                        if( i<TransformMotions.size()-1) {
+                                std::cout << ";";
+                        }
+                }
+                std::cout << "]";
         }
 }
 
@@ -123,7 +141,7 @@ dq_from_dUV_computation Tracking::algorithm1_1point( int index, bool velocity) {
 
         // Comute du and dvobot
         //device->setQ( qInit, state);
-        rw::math::Vector2D<double> currentDUV = get_du_dv_1point( index);
+        rw::math::Vector2D<double> currentDUV = get_du_dv_1point();
 
 
         const double epsilon = 1; // precision of 1 pixel
@@ -174,7 +192,7 @@ dq_from_dUV_computation Tracking::algorithm1_1point( int index, bool velocity) {
                 //std::cout << "dQ from Algo1 : [" << results.iterations << "]\n" << dq << std::endl;
 
                 // Compute the new du and dv
-                currentDUV = get_du_dv_1point( index);
+                currentDUV = get_du_dv_1point();
 
                 //update the ouput
                 maxError = currentDUV.norm2();
@@ -190,7 +208,7 @@ dq_from_dUV_computation Tracking::algorithm1_1point( int index, bool velocity) {
  * Algorithm adapted from the Newton-Raphson method.
  * based on the ex4_2 correction
  */
-dq_from_dUV_computation Tracking::algorithm1_3point( int index, bool velocity) {
+dq_from_dUV_computation Tracking::algorithm1_3point( bool velocity, bool fromVision) {
 
         // Initialization of the return variable
         dq_from_dUV_computation results;
@@ -207,7 +225,7 @@ dq_from_dUV_computation Tracking::algorithm1_3point( int index, bool velocity) {
         // Comute du and dvobot
         //device->setQ( qInit, state);
         rw::math::
-        VelocityScrew6D<double> currentDUV = get_du_dv_3point( index);
+        VelocityScrew6D<double> currentDUV = get_du_dv_3point( fromVision);
 
 
         const double epsilon = 1; // precision of 1 pixel
@@ -258,7 +276,9 @@ dq_from_dUV_computation Tracking::algorithm1_3point( int index, bool velocity) {
                 //std::cout << "dQ from Algo1 : [" << results.iterations << "]\n" << dq << std::endl;
 
                 // Compute the new du and dv
-                currentDUV = get_du_dv_3point( index);
+                currentDUV = get_du_dv_3point( fromVision);
+
+                std::cout << currentDUV << "\n";
 
                 //update the ouput
                 maxError = currentDUV.norm2();
@@ -412,7 +432,7 @@ rw::math::Jacobian Tracking::get_Jimage( int pointNumber) {
  * coordinate (x,y,z) of a point on the picture in the coordinate frame of the
  * camera. The calculation is based on the pin hole model.
  */
-rw::math::Vector2D<double> Tracking::get_du_dv_1point(int index) {
+rw::math::Vector2D<double> Tracking::get_du_dv_1point() {
         std::cout << "DUV1\n";
         // Get new Pos of the marker inside Fcam
         rw::math::Transform3D<double> markerTcam = cam_frame->fTf( marker_frame, state);
@@ -424,20 +444,23 @@ rw::math::Vector2D<double> Tracking::get_du_dv_1point(int index) {
         return dUV;
 }
 
-rw::math::VelocityScrew6D <double> Tracking::get_du_dv_3point(int index) {
-        std::cout << "DUV3\n";
+rw::math::VelocityScrew6D <double> Tracking::get_du_dv_3point( bool fromVision) {
+
+        if( fromVision) { std::cout << "DUV3 from Vision\n"; }
+        else { std::cout << "DUV3\n"; }
+
         // Get new Pos of the marker inside Fcam
         rw::math::Transform3D<double> markerTcam = cam_frame->fTf( marker_frame, state);
 
         rw::math::Vector3D<double> P;
 
-        P = markerTcam*pt1;
+        if( fromVision) { P = pt1; }else { P = markerTcam*pt1; }
         rw::math::Vector2D<double> UV1( f*(P(0)/P(2)), f*(P(1)/P(2)));
 
-        P = markerTcam*pt2;
+        if( fromVision) { P = pt2; }else { P = markerTcam*pt2; }
         rw::math::Vector2D<double> UV2( f*(P(0)/P(2)), f*(P(1)/P(2)));
 
-        P = markerTcam*pt3;
+        if( fromVision) { P = pt3; }else { P = markerTcam*pt3; }
         rw::math::Vector2D<double> UV3( f*(P(0)/P(2)), f*(P(1)/P(2)));
 
         rw::math::VelocityScrew6D<double> dUV( UVref1(0)-UV1(0), UVref1(1)-UV1(1), UVref2(0)-UV2(0), UVref2(1)-UV2(1), UVref3(0)-UV3(0), UVref3(1)-UV3(1));
@@ -458,7 +481,7 @@ void Tracking::update_Marker( int index) {
  */
 void Tracking::set( rw::models::WorkCell::Ptr wc, int mode) {
 
-        if( mode<1 and mode>3 and mode==2) {
+        if( mode<1 and mode>4 and mode==2) {
                 RW_THROW("Error mode");
         }
 
@@ -474,6 +497,11 @@ void Tracking::set( rw::models::WorkCell::Ptr wc, int mode) {
         cam_frame = wc->findFrame("Camera");
         if(cam_frame == nullptr) {
                 RW_THROW("Camera frame not found!");
+        }
+
+        tool_frame = wc->findFrame("Tool");
+        if(tool_frame == nullptr) {
+                RW_THROW("Tool frame not found!");
         }
 
         state = wc->getDefaultState();
@@ -492,8 +520,10 @@ void Tracking::set( rw::models::WorkCell::Ptr wc, int mode) {
 
         if( mode==1) {
                 set_1point( wc);
-        }else {
+        }else if( mode==3) {
                 set_3points( wc);
+        }else {
+                set_3pointsFromVision( wc);
         }
 }
 
@@ -525,9 +555,25 @@ void Tracking::set_3points( rw::models::WorkCell::Ptr wc) {
         UVref3 = rw::math::Vector2D<double>( f*(P(0)/P(2)), f*(P(1)/P(2)));
 }
 
+void Tracking::set_3pointsFromVision( rw::models::WorkCell::Ptr wc) {
+        // Get Pos of the marker inside Fcam to compute UVref
+        rw::math::Transform3D<double> markerTcam = cam_frame->fTf( marker_frame, state);
+        rw::math::Vector3D<double> P = markerTcam.P();
+        UVref = rw::math::Vector2D<double>( f*P(0)/P(2), f*P(1)/P(2));
+
+        P = pt1;
+        UVref1 = rw::math::Vector2D<double>( f*(P(0)/P(2)), f*(P(1)/P(2)));
+
+        P = pt2;
+        UVref2 = rw::math::Vector2D<double>( f*(P(0)/P(2)), f*(P(1)/P(2)));
+
+        P = pt3;
+        UVref3 = rw::math::Vector2D<double>( f*(P(0)/P(2)), f*(P(1)/P(2)));
+}
+
 /* Like the superLoop function but used for the GUI.
  */
-void Tracking::tick( int index, bool velocity, int pointNumber) {
+void Tracking::tick( int index, bool velocity, int pointNumber, bool fromVision) {
 
         // Verification
         if( pointNumber<1 or pointNumber>3 or pointNumber==2) {
@@ -540,8 +586,8 @@ void Tracking::tick( int index, bool velocity, int pointNumber) {
 
         if( pointNumber==1) {
                 result = algorithm1_1point( index, velocity);
-        }else {
-                result = algorithm1_3point( index, velocity);
+        }else if( pointNumber==3) {
+                result = algorithm1_3point( velocity, fromVision);
         }
 
         if(result.dq.size()>0) {
@@ -550,6 +596,62 @@ void Tracking::tick( int index, bool velocity, int pointNumber) {
 
         // Update the robot
         device->setQ( q, state);
+}
+
+/* Like the superLoop function but used for the GUI.
+ */
+bool Tracking::tickFromVision( int index, bool velocity, int pointNumber, bool fromVision) {
+
+        // Verification
+        if( pointNumber<1 or pointNumber>3 or pointNumber==2) {
+                RW_THROW("Error mode");
+        }
+
+        q = device->getQ(state);
+
+        // Initialization of the return variable
+        dq_from_dUV_computation results;
+        results.iterations = 0;
+
+        rw::math::Q currentQ = device->getQ( state);
+        rw::math::Q currentdQ;
+
+        double maxError = 0;
+
+        // get the velocity limits
+        rw::math::Q qVelocityLimit = device->getVelocityLimits();
+
+        // Comute du and dvobot
+        //device->setQ( qInit, state);
+        rw::math::VelocityScrew6D<double> currentDUV = get_du_dv_3point( true);
+
+        const double epsilon = 10; // precision of 1 pixel
+
+        // Get Zimage from the equation following the (eq.4.34)
+        rw::math::Jacobian Zimage = get_Zimage(3);
+
+        // based on the way to solve the equation (eq.4.34)
+        rw::math::Q dq( rw::math::LinearAlgebra::pseudoInverse(Zimage.e())*currentDUV.e());
+
+        // Update the state of the joints
+        currentQ = device->getQ( state) + dq;
+        device->setQ( currentQ, state);
+
+        //std::cout << "dQ from Algo1 : [" << results.iterations << "]\n" << dq << std::endl;
+
+        // Compute the new du and dv
+        currentDUV = get_du_dv_3point( fromVision);
+
+        std::cout << "current DUV : " << currentDUV << ", norm2 : " << currentDUV.norm2() << "\n";
+
+        //update the ouput
+        maxError = currentDUV.norm2();
+
+        if( maxError <= epsilon) {
+                return true;
+        }else {
+                return false;
+        }
 }
 
 /* Return a string with the informations about the algorithm ( index,
@@ -581,7 +683,7 @@ void Tracking::testError_from_deltaT() {
                 deltaT = i;
                 errorDUV.clear();
 
-                superLoop( true, 1);
+                superLoop( true, 1, 0);
                 //std::cout << deltaT << " : [";
                 std::cout << "[";
                 for( int j=0; j<errorDUV.size(); j++) {
