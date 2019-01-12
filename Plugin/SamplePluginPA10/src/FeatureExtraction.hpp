@@ -39,7 +39,7 @@ cv::Mat gaussianBlur( const cv::Mat&);
 cv::Mat segmentation( const cv::Mat src, std::string mode);
 cv::Mat drawResult( const cv::Mat& src, std::vector<cv::Point> center);
 std::vector<cv::Point> algoFind3Points( const std::vector<cv::Point> center);
-cv::Mat tick( cv::Mat*, std::vector<cv::Point>);
+cv::Mat tick( cv::Mat, std::vector<cv::Point>&, bool);
 };
 
 class PointsFeatures {

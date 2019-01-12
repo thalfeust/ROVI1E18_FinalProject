@@ -259,6 +259,24 @@ void SamplePlugin::btnPressed() {
                 getRobWorkStudio()->updateAndRepaint();
                 printPicture( grabPicture());
 
+                if( !mode1) {
+                        std::cout << "set Mode 2\n";
+                        cv::Mat img = grabPicture();
+
+                        std::vector<cv::Point> center;
+                        cv::Mat toPrint = extraction_CS.tick( img, center, checkBox_m2_openCV->isChecked());
+
+                        tracker.pt1 = rw::math::Vector3D<double>( (center[0].x - img.cols/2)/1000.0, (center[0].y - img.rows/2)/1000.0, tracker.z);
+
+                        tracker.pt2 = rw::math::Vector3D<double>( (center[1].x - img.cols/2)/1000.0, (center[1].y - img.rows/2)/1000.0, tracker.z);
+
+                        tracker.pt3 = rw::math::Vector3D<double>( (center[2].x - img.cols/2)/1000.0, (center[2].y - img.rows/2)/1000.0, tracker.z);
+
+                        std::cout << " Key : " << tracker.pt1 << " " << tracker.pt2 << " " << tracker.pt3 << "\n";
+
+                        tracker.set( _wc, 4);
+                }
+
                 pushButton_Play->setEnabled(true);
                 pushButton_Play->setStyleSheet("background-color: green");
 
@@ -312,17 +330,35 @@ void SamplePlugin::timer() {
 
                 if( mode1) {
                         if( mode1_1point) {
-                                tracker.tick( indexTimer, false, 1);
+                                tracker.tick( indexTimer, false, 1, false);
                         }else {
-                                tracker.tick( indexTimer, false, 3);
+                                tracker.tick( indexTimer, false, 3, false);
                         }
                 }else {
                         std::cout << "Mode 2\n";
-                        cv::Mat img = grabPicture();
-                        std::cout << "Grabed\n";
-                        std::vector<cv::Point> center;
-                        cv::Mat toPrint = extraction_CS.tick( &img, center);
-                        std::cout << "Vision did";
+
+                        cv::Mat toPrint;
+
+                        do {
+
+                                getRobWorkStudio()->setState( tracker.state);
+                                getRobWorkStudio()->updateAndRepaint();
+
+                                cv::Mat img = grabPicture();
+
+                                std::vector<cv::Point> center;
+                                toPrint = extraction_CS.tick( img, center, checkBox_m2_openCV->isChecked());
+
+                                tracker.pt1 = rw::math::Vector3D<double>( (center[0].x - img.cols/2)/1000.0, (center[0].y - img.rows/2)/1000.0, tracker.z);
+
+                                tracker.pt2 = rw::math::Vector3D<double>( (center[1].x - img.cols/2)/1000.0, (center[1].y - img.rows/2)/1000.0, tracker.z);
+
+                                tracker.pt3 = rw::math::Vector3D<double>( (center[2].x - img.cols/2)/1000.0, (center[2].y - img.rows/2)/1000.0, tracker.z);
+
+                                std::cout << " Key : " << tracker.pt1 << " " << tracker.pt2 << " " << tracker.pt3 << "\n";
+
+                        } while( !tracker.tickFromVision( indexTimer, false, 3, true));
+
                         printPicture( toPrint);
                 }
 

@@ -130,8 +130,6 @@ cv::Mat ColorSegmentation::segmentation(
         cv::Mat hsv_image;
         cv::cvtColor(src, hsv_image, cv::COLOR_BGR2HSV);
 
-        std::cout << "Colored\n";
-
         cv::Mat toReturn;
 
         if( mode.compare("red")==0) {
@@ -236,54 +234,78 @@ std::vector<cv::Point> ColorSegmentation::algoFind3Points(
         return toReturn;
 }
 
-cv::Mat ColorSegmentation::tick( cv::Mat* img, std::vector<cv::Point> center) {
+cv::Mat ColorSegmentation::tick( cv::Mat img, std::vector<cv::Point> &center, bool print) {
+
+        if( print) {
+                cv::namedWindow("RED / BLUE", cv::WINDOW_NORMAL);
+        }
+
+        cv::Mat matArrayOutputLine1[2];
+        cv::Mat matArrayOutputLine2[2];
 
         std::cout << "Tick\n";
 
-        // Isolate Circles by color
-        cv::Mat red_hsv_range = segmentation( (*img), "red");
-        cv::Mat blue_hsv_range = segmentation( (*img), "blue");
+        cv::Mat res;
+        cv::cvtColor( img, res, cv::COLOR_BGR2RGB);
 
-        std::cout << "Isolation\n";
+        // Isolate Circles by color
+        cv::Mat red_hsv_range = segmentation( res, "red");
+        cv::Mat blue_hsv_range = segmentation( res, "blue");
+
+        matArrayOutputLine1[0] = red_hsv_range;
+        matArrayOutputLine1[1] = blue_hsv_range;
 
         // Dilate to get rid of isoled pixels and some noise
         red_hsv_range = dilate( red_hsv_range);
         blue_hsv_range = dilate( blue_hsv_range);
 
-        std::cout << "Dilation\n";
-
         // Erode
         red_hsv_range = erode( red_hsv_range);
         blue_hsv_range = erode( blue_hsv_range);
-
-        std::cout << "Erode\n";
 
         // Blur image
         red_hsv_range = gaussianBlur( red_hsv_range);
         blue_hsv_range = gaussianBlur( blue_hsv_range);
 
-        std::cout << "Blur\n";
-
         // Find the red circle
         cv::Mat redCircle = FindCircles( red_hsv_range, center, false);
+        matArrayOutputLine2[0] = redCircle;
 
         // Find blue circle
         cv::Mat blueCircle = FindCircles( blue_hsv_range, center, false);
+        matArrayOutputLine2[1] = blueCircle;
 
         std::cout << "Number of centers : " << center.size() << std::endl;
 
+        if( print) {
+                cv::cvtColor( matArrayOutputLine1[0], matArrayOutputLine1[0], cv::COLOR_GRAY2BGR);
+                cv::cvtColor( matArrayOutputLine1[1], matArrayOutputLine1[1], cv::COLOR_GRAY2BGR);
+
+                cv::Mat outL1;
+                cv::hconcat( matArrayOutputLine1, 2, outL1);
+
+                cv::Mat outL2;
+                cv::hconcat( matArrayOutputLine2, 2, outL2);
+
+                cv::Mat output;
+                cv::Mat outC[] = { outL1, outL2};
+                cv::vconcat( outC, 2, output);
+
+                cv::imshow("RED / BLUE", output);
+        }
+
         if( center.size()>=4) {
 
-                std::vector<cv::Point> keypoints = algoFind3Points( center);
-                std::cout << " Key : " << keypoints[0] <<" "<< keypoints[1] << "\n";
+                center = algoFind3Points( center);
+                std::cout << " Key : " << center[0] << " " << center[1] << " " << center[2] << "\n";
 
-                if( keypoints.size()>=3) {
-                        cv::Mat toReturn = drawResult( (*img), keypoints);
+                if( center.size()>=3) {
+                        cv::Mat toReturn = drawResult( img, center);
                         return toReturn;
                 }
         }
 
-        return (*img);
+        return img;
 }
 
 PointsFeatures::PointsFeatures( int detector, cv::Mat img) {
