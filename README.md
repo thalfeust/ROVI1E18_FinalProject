@@ -44,6 +44,8 @@ examples :
 ./mainT_seq3 ../data/marker_4.png ../data/marker_corny/
 ./mainT_seq3 ../data/marker_4.png ../data/marker_corny_hard/
 
+To iterate each picture hit ESCAPE
+
 // ROBOTIC PART
 
 same steps 1), 2) and 3)
@@ -63,3 +65,5 @@ examples :
 in the file Plugin/SamplePluginPA10/src/SamplePlugin.cpp :
 - Verify the paths configuration (begin line 27)
 - do the steps 1), 2) and 3)
+
+You have to re-load if you want to change the mode or the path.
