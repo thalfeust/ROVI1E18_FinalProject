@@ -44,12 +44,12 @@ int main(int argc, char* argv[])
 
 								// Get the path of the folder
 								cv::String folder = parser.get<String>("@path");
-								folder += "*.ppm";
+								folder += "*.png";
 
 								FeaturesDections features;
 								ColorSegmentation extraction_CS;
-								//extraction_CS .set( 2000.0, 0.78, dilation_size, erosion_size, cv::Size(9, 9), cv::Scalar(0, 151, 0), cv::Scalar(010, 255, 255), cv::Scalar(90, 80, 10), cv::Scalar(180, 200, 150));
-								extraction_CS.set( 2000.0, 0.78, 5, 1, cv::Size(9, 9), cv::Scalar(0, 0, 0), cv::Scalar(30, 255, 255), cv::Scalar(70, 0, 0), cv::Scalar(180, 255, 255));
+								extraction_CS.set( 2000.0, 0.78, dilation_size, erosion_size, cv::Size(9, 9), cv::Scalar(0, 151, 0), cv::Scalar(010, 255, 255), cv::Scalar(90, 80, 10), cv::Scalar(180, 200, 150));
+								//extraction_CS.set( 2000.0, 0.78, 5, 1, cv::Size(9, 9), cv::Scalar(0, 0, 0), cv::Scalar(30, 255, 255), cv::Scalar(70, 0, 0), cv::Scalar(180, 255, 255));
 
 								cv::namedWindow(folder, cv::WINDOW_NORMAL);
 

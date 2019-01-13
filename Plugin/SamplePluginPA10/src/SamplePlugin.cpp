@@ -28,6 +28,10 @@ using namespace std::placeholders;
 std::string motionPath_Slow = "/home/student/Documents/ROVI1E18_FinalProject/Plugin/SamplePluginPA10/motions/MarkerMotionSlow.txt";
 std::string motionPath_Medium = "/home/student/Documents/ROVI1E18_FinalProject/Plugin/SamplePluginPA10/motions/MarkerMotionMedium.txt";
 std::string motionPath_Fast = "/home/student/Documents/ROVI1E18_FinalProject/Plugin/SamplePluginPA10/motions/MarkerMotionFast.txt";
+std::string workcellPath = "/home/student/Documents/ROVI1E18_FinalProject/Workcells/PA10WorkCell/ScenePA10RoVi1.wc.xml";
+std::string lenaPath = "/home/student/Documents/ROVI1E18_FinalProject/Plugin/SamplePluginPA10/src/lena.bmp";
+std::string backgroundPath = "/home/student/Documents/ROVI1E18_FinalProject/Plugin/SamplePluginPA10/backgrounds/color1.ppm";
+std::string colorPath = "/home/student/Documents/ROVI1E18_FinalProject/Plugin/SamplePluginPA10/markers/Marker1.ppm";
 
 SamplePlugin::SamplePlugin() :
         RobWorkStudioPlugin("SamplePluginUI", QIcon(":/pa_icon.png")) {
@@ -60,12 +64,12 @@ void SamplePlugin::initialize() {
         getRobWorkStudio()->stateChangedEvent().add(std::bind(&SamplePlugin::stateChangedListener, this, _1), this);
 
         // Auto load workcell
-        WorkCell::Ptr wc = WorkCellLoader::Factory::load("/home/student/Documents/ROVI1E18_FinalProject/Workcells/PA10WorkCell/ScenePA10RoVi1.wc.xml");
+        WorkCell::Ptr wc = WorkCellLoader::Factory::load(workcellPath);
         getRobWorkStudio()->setWorkCell(wc);
 
         // Load Lena image
         Mat im, image;
-        im = imread("/home/student/Documents/ROVI1E18_FinalProject/Plugin/SamplePluginPA10/src/lena.bmp", CV_LOAD_IMAGE_COLOR); // Read the file
+        im = imread( lenaPath, CV_LOAD_IMAGE_COLOR); // Read the file
         if(!im.data ) {
                 RW_THROW("Could not open or find the image: please modify the file path in the source code!");
         }
@@ -145,21 +149,14 @@ Mat SamplePlugin::toOpenCVImage(const Image& img) {
 void SamplePlugin::btnPressed() {
         QObject *obj = sender();
 
-        if( obj==radioButton_mode1) {
-                rb_1point->setEnabled(true);
-                rb_3point->setEnabled(true);
-        }else if( obj==radioButton_mode2) {
-                rb_1point->setEnabled(false);
-                rb_3point->setEnabled(false);
-
-        }else if( obj==pushButton_Load) {
+        if( obj==pushButton_Load) {
                 log().info() << "Button Load\n";
 
                 pushButton_Play->setEnabled(false);
 
                 // Set a new texture (one pixel = 1 mm)
                 Image::Ptr image;
-                image = ImageLoader::Factory::load("/home/student/Documents/ROVI1E18_FinalProject/Plugin/SamplePluginPA10/backgrounds/color1.ppm");
+                image = ImageLoader::Factory::load(backgroundPath);
                 _bgRender->setImage(*image);
 
                 //extraction_CS.plop();
@@ -199,7 +196,7 @@ void SamplePlugin::btnPressed() {
                                 tracker.set( _wc, 3);
                         }
 
-                        image = ImageLoader::Factory::load("/home/student/Documents/ROVI1E18_FinalProject/Plugin/SamplePluginPA10/markers/Marker1.ppm");
+                        image = ImageLoader::Factory::load(colorPath);
                         _textureRender->setImage(*image);
                         // Update the maker frame
                         tracker.update_Marker( 0);
@@ -208,10 +205,7 @@ void SamplePlugin::btnPressed() {
 
                         // Set the Vision variables
                         extraction_CS.set( 2000.0, 0.78, 5, 1, cv::Size(9, 9), cv::Scalar(0, 0, 0), cv::Scalar(30, 255, 255), cv::Scalar(70, 0, 0), cv::Scalar(180, 255, 255));
-                        //extraction_CS.set( 2000.0, 0.78, 5, 1, cv::Size(9, 9), cv::Scalar(0, 151, 0), cv::Scalar(010, 255, 255), cv::Scalar(90, 80, 10), cv::Scalar(180, 200, 150));
-                        extraction_CS.plop();
 
-                        mode1_1point = false;
                         mode1 = false;
 
                         // Set the Tracking variables
@@ -235,8 +229,6 @@ void SamplePlugin::btnPressed() {
 
                         image = ImageLoader::Factory::load("/home/student/Documents/ROVI1E18_FinalProject/Plugin/SamplePluginPA10/markers/Marker1.ppm");
                         _textureRender->setImage(*image);
-
-                        tracker.set( _wc, 3);
                 }
 
                 // Update the robot
@@ -252,15 +244,13 @@ void SamplePlugin::btnPressed() {
                         std::vector<cv::Point> center;
                         cv::Mat toPrint = extraction_CS.tick( img, center, checkBox_m2_openCV->isChecked());
 
-                        tracker.pt1 = rw::math::Vector3D<double>( (center[0].x - img.cols/2)/1000.0, (center[0].y - img.rows/2)/1000.0, tracker.z);
-
-                        tracker.pt2 = rw::math::Vector3D<double>( (center[1].x - img.cols/2)/1000.0, (center[1].y - img.rows/2)/1000.0, tracker.z);
-
-                        tracker.pt3 = rw::math::Vector3D<double>( (center[2].x - img.cols/2)/1000.0, (center[2].y - img.rows/2)/1000.0, tracker.z);
-
-                        std::cout << " Key : " << tracker.pt1 << " " << tracker.pt2 << " " << tracker.pt3 << "\n";
-
-                        tracker.set( _wc, 4);
+                        if( rb_1point->isChecked()) {
+                                mode1_1point = true;
+                                tracker.set( _wc, 1);
+                        }else {
+                                mode1_1point = false;
+                                tracker.set( _wc, 3);
+                        }
                 }
 
                 pushButton_Play->setEnabled(true);
@@ -324,26 +314,21 @@ void SamplePlugin::timer() {
                         std::cout << "Mode 2\n";
 
                         cv::Mat toPrint;
+                        getRobWorkStudio()->setState( tracker.state);
+                        getRobWorkStudio()->updateAndRepaint();
 
-                        do {
+                        cv::Mat img = grabPicture();
 
-                                getRobWorkStudio()->setState( tracker.state);
-                                getRobWorkStudio()->updateAndRepaint();
+                        // Extraction of the points from the picture
+                        std::vector<cv::Point> center;
+                        toPrint = extraction_CS.tick( img, center, checkBox_m2_openCV->isChecked());
 
-                                cv::Mat img = grabPicture();
-
-                                std::vector<cv::Point> center;
-                                toPrint = extraction_CS.tick( img, center, checkBox_m2_openCV->isChecked());
-
-                                tracker.pt1 = rw::math::Vector3D<double>( (center[0].x - img.cols/2)/1000.0, (center[0].y - img.rows/2)/1000.0, tracker.z);
-
-                                tracker.pt2 = rw::math::Vector3D<double>( (center[1].x - img.cols/2)/1000.0, (center[1].y - img.rows/2)/1000.0, tracker.z);
-
-                                tracker.pt3 = rw::math::Vector3D<double>( (center[2].x - img.cols/2)/1000.0, (center[2].y - img.rows/2)/1000.0, tracker.z);
-
-                                std::cout << " Key : " << tracker.pt1 << " " << tracker.pt2 << " " << tracker.pt3 << "\n";
-
-                        } while( !tracker.tickFromVision( indexTimer, false, 3, true));
+                        // tracking
+                        if( mode1_1point) {
+                                tracker.tick( indexTimer, false, 1, false);
+                        }else {
+                                tracker.tick( indexTimer, false, 3, false);
+                        }
 
                         printPicture( toPrint);
                 }

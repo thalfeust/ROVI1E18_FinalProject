@@ -13,6 +13,7 @@ int main( int argc, char *argv[]) {
         std::string motions_path = "../../Plugin/SamplePluginPA10/motions/MarkerMotionSlow.txt";
         int pointNumber = 1;
         int printOutputMode = 0;
+        bool velocity = false;
         if( argc>1) {
                 if( strcmp( argv[1], "Slow")==0) {
                         motions_path = "../../Plugin/SamplePluginPA10/motions/MarkerMotionSlow.txt";
@@ -34,6 +35,14 @@ int main( int argc, char *argv[]) {
                                         printOutputMode = 1;
                                 }else if( strcmp( argv[3], "tool")==0) {
                                         printOutputMode = 2;
+                                }else if( strcmp( argv[3], "error")==0) {
+                                        printOutputMode = 3;
+                                }
+
+                                if( argc>4) {
+                                        if( strcmp( argv[4], "velocity")==0) {
+                                                velocity = true;
+                                        }
                                 }
                         }
                 }
@@ -73,10 +82,12 @@ int main( int argc, char *argv[]) {
                 std::cin >> tamp;
         }
 
-        tracker.superLoop( false, pointNumber, printOutputMode);
-        //tracker.testError_from_deltaT();
+        if( printOutputMode==3) {
+                tracker.testError_from_deltaT( pointNumber);
+        }else {
+                tracker.superLoop( velocity, pointNumber, printOutputMode);
+        }
 
         std::cout << "END" << std::endl;
         return 0;
-
 }

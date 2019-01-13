@@ -53,7 +53,7 @@ void Tracking::getTransformMotions( std::string path) {
 /* Compute new Q for each motions of the marker using the pinhole model and the
  * inverse Kinematics.
  */
-void Tracking::superLoop( bool optionStoreTest, int pointNumber, int printOutputMode) {
+void Tracking::superLoop( bool velocity, int pointNumber, int printOutputMode) {
 
         // Verification
         if( pointNumber<1 and pointNumber>3 and pointNumber==2) {
@@ -66,22 +66,26 @@ void Tracking::superLoop( bool optionStoreTest, int pointNumber, int printOutput
         // For each steps the new q is store
         rw::math::Q qStorage[TransformMotions.size()];
         rw::math::Transform3D<double> toolStorage[TransformMotions.size()];
-        int accessible[TransformMotions.size()]; // 0 : impossible, 1 : not reachable, 2 : yes
+        double error[TransformMotions.size()];
 
-        q = device->getQ(state);
         for (unsigned int i=0; i<TransformMotions.size(); i++) {
+
+                q = device->getQ(state);
 
                 update_Marker( i);
 
                 dq_from_dUV_computation result;
                 if( pointNumber==1) {
-                        result = algorithm1_1point( i, true);
+                        result = algorithm1_1point( i, velocity);
                 }else {
-                        result = algorithm1_3point( true, false);
+                        result = algorithm1_3point( velocity, false);
                 }
 
                 if(result.dq.size()>0) {
                         q += result.dq[result.dq.size()-1];
+                        isReachable = true;
+                }else {
+                        isReachable = false;
                 }
 
                 // Update the workcell
@@ -90,11 +94,7 @@ void Tracking::superLoop( bool optionStoreTest, int pointNumber, int printOutput
                 // Update the storages;
                 qStorage[i] = q;
                 toolStorage[i] = tool_frame->wTf(state);
-
-                if( optionStoreTest) {
-                        errorDUV.push_back( result.maxError);
-                }
-
+                error[i] = result.maxError;
         }
         if( printOutputMode == 1) {
                 // Print Q
@@ -109,7 +109,7 @@ void Tracking::superLoop( bool optionStoreTest, int pointNumber, int printOutput
                 std::cout << "]";
         }else if( printOutputMode == 2) {
                 // Print Fcam
-                std::cout << "\n\n\nQ results : " << std::endl;
+                std::cout << "\n\n\nTool poses results : " << std::endl;
                 std::cout << "[";
                 for (unsigned int i=0; i<TransformMotions.size(); i++) {
                         std::cout << toolStorage[i].P();
@@ -118,6 +118,8 @@ void Tracking::superLoop( bool optionStoreTest, int pointNumber, int printOutput
                         }
                 }
                 std::cout << "]";
+        }else if( printOutputMode == 3) {
+                errorDUV = *std::max_element( error, error+TransformMotions.size());
         }
 }
 
@@ -177,7 +179,6 @@ dq_from_dUV_computation Tracking::algorithm1_1point( int index, bool velocity) {
                 if( !reachable) {
                         break;
                 }
-
 
                 results.dq.push_back( storagedQ);
 
@@ -672,19 +673,35 @@ std::string Tracking::print( rw::models::WorkCell::Ptr wc, int index) {
         return toReturn;
 }
 
-void Tracking::testError_from_deltaT() {
+void Tracking::testError_from_deltaT(  int pointNumber) {
+
+        double errorStorage[ 19];
+        int reachabletorage[ 19];
+
+        int cpt = 0;
         for( float i=0.05; i<=1; i+=0.05) {
                 device->setQ( qInit, state);
                 deltaT = i;
-                errorDUV.clear();
+                errorDUV = 0;
 
-                superLoop( true, 1, 0);
+                superLoop( true, pointNumber, 3);
                 //std::cout << deltaT << " : [";
-                std::cout << "[";
-                for( int j=0; j<errorDUV.size(); j++) {
-                        std::cout << errorDUV[j] << ",";
+
+                errorStorage[cpt] = errorDUV;
+                if( isReachable) {
+                        reachabletorage[cpt] = 1;
+                }else {
+                        reachabletorage[cpt] = 0;
                 }
-                std::cout << ";\n";
+                cpt++;
+        }
+        std::cout << "[";
+        for( int i=0; i<19; i++) {
+                std::cout << errorStorage[i] << "," << reachabletorage[i];
+
+                if( i<20-1) {
+                        std::cout << ";";
+                }
         }
         std::cout << "]\n";
 }
