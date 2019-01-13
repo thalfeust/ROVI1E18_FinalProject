@@ -26,7 +26,6 @@ std::vector<rw::math::Transform3D<double> > TransformMotions;
 rw::models::Device::Ptr device;
 rw::kinematics::State state;
 rw::kinematics::Frame* cam_frame;
-rw::kinematics::Frame* tool_frame;
 rw::kinematics::MovableFrame* marker_frame;
 rw::math::Q q;
 rw::math::Q qInit;
@@ -39,16 +38,15 @@ rw::math::Vector2D<double> UVref1;
 rw::math::Vector2D<double> UVref2;
 rw::math::Vector2D<double> UVref3;
 
-double errorDUV;
-bool isReachable;
+std::vector<double> errorDUV;
 
 float f;
 float z;
 float deltaT;
 
 void getTransformMotions( std::string path);
-void testError_from_deltaT( int pointNumber);
-void superLoop( bool velocity, int pointNumber, int printOutputMode);
+void testError_from_deltaT();
+void superLoop( bool optionStoreTest, int pointNumber);
 dq_from_dUV_computation algorithm1_1point( int index, bool velocity);
 dq_from_dUV_computation algorithm1_3point( bool velocity, bool fromVision);
 rw::math::Jacobian get_Zimage( int pointNumber);

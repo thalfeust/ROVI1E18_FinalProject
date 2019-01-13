@@ -288,7 +288,7 @@ void SamplePlugin::btnPressed() {
                 if (!_timer->isActive()) {
                         pushButton_Break->setStyleSheet("background-color: red");
                         label_state->setText( "[running...]");
-                        _timer->start( spinBox_deltaT->value());
+                        _timer->start( 100);
                 }else {
                         pushButton_Break->setStyleSheet("background-color: green");
                         label_state->setText( "[break...]");

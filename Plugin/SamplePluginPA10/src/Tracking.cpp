@@ -53,7 +53,7 @@ void Tracking::getTransformMotions( std::string path) {
 /* Compute new Q for each motions of the marker using the pinhole model and the
  * inverse Kinematics.
  */
-void Tracking::superLoop( bool velocity, int pointNumber, int printOutputMode) {
+void Tracking::superLoop( bool optionStoreTest, int pointNumber) {
 
         // Verification
         if( pointNumber<1 and pointNumber>3 and pointNumber==2) {
@@ -65,61 +65,41 @@ void Tracking::superLoop( bool velocity, int pointNumber, int printOutputMode) {
 
         // For each steps the new q is store
         rw::math::Q qStorage[TransformMotions.size()];
-        rw::math::Transform3D<double> toolStorage[TransformMotions.size()];
-        double error[TransformMotions.size()];
+        int accessible[TransformMotions.size()]; // 0 : impossible, 1 : not reachable, 2 : yes
 
+        q = device->getQ(state);
         for (unsigned int i=0; i<TransformMotions.size(); i++) {
-
-                q = device->getQ(state);
 
                 update_Marker( i);
 
                 dq_from_dUV_computation result;
                 if( pointNumber==1) {
-                        result = algorithm1_1point( i, velocity);
+                        result = algorithm1_1point( i, true);
                 }else {
-                        result = algorithm1_3point( velocity, false);
+                        result = algorithm1_3point( true, false);
                 }
 
                 if(result.dq.size()>0) {
                         q += result.dq[result.dq.size()-1];
-                        isReachable = true;
-                }else {
-                        isReachable = false;
                 }
+
+                // Update the storages;
+                qStorage[i] = q;
 
                 // Update the workcell
                 device->setQ( q, state);
 
-                // Update the storages;
-                qStorage[i] = q;
-                toolStorage[i] = tool_frame->wTf(state);
-                error[i] = result.maxError;
+                if( optionStoreTest) {
+                        errorDUV.push_back( result.maxError);
+                }
+
         }
-        if( printOutputMode == 1) {
-                // Print Q
+        if( !optionStoreTest) {
+                // Print the results
                 std::cout << "\n\n\nQ results : " << std::endl;
-                std::cout << "[";
                 for (unsigned int i=0; i<TransformMotions.size(); i++) {
-                        std::cout << qStorage[i];
-                        if( i<TransformMotions.size()-1) {
-                                std::cout << ";";
-                        }
+                        std::cout << i << " : " << qStorage[i] << "\nCam : " << cam_frame->wTf(state) << std::endl;
                 }
-                std::cout << "]";
-        }else if( printOutputMode == 2) {
-                // Print Fcam
-                std::cout << "\n\n\nTool poses results : " << std::endl;
-                std::cout << "[";
-                for (unsigned int i=0; i<TransformMotions.size(); i++) {
-                        std::cout << toolStorage[i].P();
-                        if( i<TransformMotions.size()-1) {
-                                std::cout << ";";
-                        }
-                }
-                std::cout << "]";
-        }else if( printOutputMode == 3) {
-                errorDUV = *std::max_element( error, error+TransformMotions.size());
         }
 }
 
@@ -134,7 +114,7 @@ dq_from_dUV_computation Tracking::algorithm1_1point( int index, bool velocity) {
         results.iterations = 0;
 
         rw::math::Q currentQ = device->getQ( state);
-        rw::math::Q storagedQ;
+        rw::math::Q currentdQ;
 
         double maxError = 0;
 
@@ -159,16 +139,16 @@ dq_from_dUV_computation Tracking::algorithm1_1point( int index, bool velocity) {
 
                 // Update the result of the function
                 if(results.iterations > 1) {
-                        storagedQ += dq;
+                        currentdQ += dq;
                 }else {
-                        storagedQ = dq;
+                        currentdQ = dq;
                 }
 
                 bool reachable = true;
 
                 if( velocity) {
                         for (unsigned w=0; w<q.size(); w++) {
-                                if( storagedQ[w] / deltaT > qVelocityLimit[w]) {
+                                if( currentdQ[w] / deltaT > qVelocityLimit[w]) {
                                         reachable = false;
                                         break;
                                 }
@@ -180,8 +160,11 @@ dq_from_dUV_computation Tracking::algorithm1_1point( int index, bool velocity) {
                         break;
                 }
 
-                results.dq.push_back( storagedQ);
-
+                if(results.iterations >= 1) {
+                        results.dq.push_back( dq+results.dq[ results.iterations-1]);
+                }else {
+                        results.dq.push_back( dq);
+                }
                 results.iterations++;
 
                 // Update the state of the joints
@@ -214,7 +197,7 @@ dq_from_dUV_computation Tracking::algorithm1_3point( bool velocity, bool fromVis
         results.iterations = 0;
 
         rw::math::Q currentQ = device->getQ( state);
-        rw::math::Q storagedQ;
+        rw::math::Q currentdQ;
 
         double maxError = 0;
 
@@ -240,16 +223,16 @@ dq_from_dUV_computation Tracking::algorithm1_3point( bool velocity, bool fromVis
 
                 // Update the result of the function
                 if(results.iterations > 1) {
-                        storagedQ += dq;
+                        currentdQ += dq;
                 }else {
-                        storagedQ = dq;
+                        currentdQ = dq;
                 }
 
                 bool reachable = true;
 
                 if( velocity) {
                         for (unsigned w=0; w<q.size(); w++) {
-                                if( storagedQ[w] / deltaT > qVelocityLimit[w]) {
+                                if( currentdQ[w] / deltaT > qVelocityLimit[w]) {
                                         reachable = false;
                                         break;
                                 }
@@ -261,8 +244,11 @@ dq_from_dUV_computation Tracking::algorithm1_3point( bool velocity, bool fromVis
                         break;
                 }
 
-                results.dq.push_back( storagedQ);
-
+                if(results.iterations >= 1) {
+                        results.dq.push_back( dq+results.dq[ results.iterations-1]);
+                }else {
+                        results.dq.push_back( dq);
+                }
                 results.iterations++;
 
                 // Update the state of the joints
@@ -495,11 +481,6 @@ void Tracking::set( rw::models::WorkCell::Ptr wc, int mode) {
                 RW_THROW("Camera frame not found!");
         }
 
-        tool_frame = wc->findFrame("Tool");
-        if(tool_frame == nullptr) {
-                RW_THROW("Tool frame not found!");
-        }
-
         state = wc->getDefaultState();
 
         marker_frame = dynamic_cast<rw::kinematics::MovableFrame*>(wc->findFrame("Marker"));
@@ -610,7 +591,7 @@ bool Tracking::tickFromVision( int index, bool velocity, int pointNumber, bool f
         results.iterations = 0;
 
         rw::math::Q currentQ = device->getQ( state);
-        rw::math::Q storagedQ;
+        rw::math::Q currentdQ;
 
         double maxError = 0;
 
@@ -673,35 +654,19 @@ std::string Tracking::print( rw::models::WorkCell::Ptr wc, int index) {
         return toReturn;
 }
 
-void Tracking::testError_from_deltaT(  int pointNumber) {
-
-        double errorStorage[ 19];
-        int reachabletorage[ 19];
-
-        int cpt = 0;
+void Tracking::testError_from_deltaT() {
         for( float i=0.05; i<=1; i+=0.05) {
                 device->setQ( qInit, state);
                 deltaT = i;
-                errorDUV = 0;
+                errorDUV.clear();
 
-                superLoop( true, pointNumber, 3);
+                superLoop( true, 1);
                 //std::cout << deltaT << " : [";
-
-                errorStorage[cpt] = errorDUV;
-                if( isReachable) {
-                        reachabletorage[cpt] = 1;
-                }else {
-                        reachabletorage[cpt] = 0;
+                std::cout << "[";
+                for( int j=0; j<errorDUV.size(); j++) {
+                        std::cout << errorDUV[j] << ",";
                 }
-                cpt++;
-        }
-        std::cout << "[";
-        for( int i=0; i<19; i++) {
-                std::cout << errorStorage[i] << "," << reachabletorage[i];
-
-                if( i<20-1) {
-                        std::cout << ";";
-                }
+                std::cout << ";\n";
         }
         std::cout << "]\n";
 }
