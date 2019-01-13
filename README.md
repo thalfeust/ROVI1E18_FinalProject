@@ -49,12 +49,12 @@ examples :
 same steps 1), 2) and 3)
 
 Commands :
--> ./main [MOTIONS=Slow : (Slow,Medium,Fast)] [PTS_NBR=1 : (1,3)] [OUTPUT=None : (Q,tool,error)]
+-> ./main [MOTIONS=Slow : (Slow,Medium,Fast)] [PTS_NBR=1 : (1,3)] [OUTPUT=None : (Q,tool,error)] [VELOCITY]
 examples : 
 ./main Fast 3 error  -> 3 pts tracking on the motion Fast and print the error
 ./main Slow 1 Q      -> 1 pts tracking on the motion Slow and print each Q
 ./main Medium 1 tool -> 1 pts tracking on the motion Medium and print each poses of tool Frame
-
+./main Medium 1 tool velocity - > Same but with concideration of the velocity
 
 // FUSION PART
 

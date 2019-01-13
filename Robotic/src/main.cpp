@@ -41,6 +41,7 @@ int main( int argc, char *argv[]) {
 
                                 if( argc>4) {
                                         if( strcmp( argv[4], "velocity")==0) {
+                                                std::cout << "Velocity : ON\n";
                                                 velocity = true;
                                         }
                                 }
